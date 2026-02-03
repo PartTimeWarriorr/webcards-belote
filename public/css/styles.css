@@ -1,0 +1,29 @@
+* {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+:root {
+    --btn-main-color: #57f269;
+    /* --bg-color: #FDFBD4; */
+    --bg-color: black;
+}
+
+body {
+    background-color: var(--bg-color);
+}
+
+.main-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30vh;
+}
+
+.btn-main {
+    padding: 2vw;
+    margin: 2vw;
+    min-width: 15vw;
+    background-color: var(--btn-main-color); 
+    border-radius: 5px;
+    border: none;
+}
