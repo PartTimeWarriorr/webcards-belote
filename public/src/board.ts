@@ -1,89 +1,59 @@
 import Konva from 'konva';
-import type { Card } from './card.types.ts';
-import type { Vector2d } from 'konva/lib/types';
+import { Card, Suit, Rank} from './card.js';
+import { Vector2d } from 'konva/lib/types';
 
-const stage = new Konva.Stage({
-    container: "container",
-    width: window.innerWidth,
-    height: window.innerHeight,
-});
-
-const layer = new Konva.Layer();
-const dragLayer = new Konva.Layer();
-
-const imageObj = new Image();
-imageObj.src = "/cards/1B.svg";
+const cardsPath = '/cards';
 const IMAGE_SCALE = 2;
+const INIT_POS : Vector2d = {x: 0, y: 0};
+const SPACE = 10;
 
-imageObj.onload = () => {
-    const card = new Konva.Image({
-        x: 0,
-        y: 0,
-        image: imageObj,
-        width: imageObj.width / IMAGE_SCALE,
-        height: imageObj.height / IMAGE_SCALE,
-        draggable: true,
-    }) as Card;
-    card.dragStartX = 0;
-    card.dragStartY = 0;
+export class Board {
+    deck: Array<Card> = new Array();
+    layer: Konva.Layer;
 
-    card.on("mouseover", function() {
-        document.body.style.cursor = "pointer";
-    });
-
-    card.on("mouseout", function() {
-        document.body.style.cursor = "default";
-    });
-
-    card.on("dragstart", function(e) {
-        card.moveTo(dragLayer);
-        card.dragStartX = card.x();
-        card.dragStartY = card.y();
-        console.log(card.dragStartX, card.dragStartY)
-    });
-
-    card.on("dragend", function (e) {
-        const pos = stage.getPointerPosition();
-
-        if (pos == null) {
-            console.log("opaaa");
-            return;
-        }
-        
-        const shape = layer.getIntersection(pos);
-
-        let data = {name: ""};
-        if (shape != null) {
-            data = shape.getAttr("metadata") ?? {name : ""};
+    constructor(layer: Konva.Layer) {
+        // Add all cards to deck
+        for (let s of Object.values(Suit)){
+            for (let r of Object.values(Rank).filter((v) : v is Rank => typeof v === 'number')) {
+                this.deck.push(new Card(s, r));
+            } 
         }
 
-        const startPosition : Vector2d = { x : card.dragStartX, y : card.dragStartY };
-        if (data.name != "PlayField") {
-            card.setPosition(startPosition);
-        }
-    });
+        this.layer = layer;
+    }
 
-    layer.add(card);
-}
+    visualizeHand() {
+        let cards: Array<Card> = [
+            new Card(Suit.Clubs, Rank.Ace),
+            new Card(Suit.Clubs, Rank.Eight),
+            new Card(Suit.Clubs, Rank.Queen),
+            new Card(Suit.Diamonds, Rank.Seven),
+            new Card(Suit.Spades, Rank.Jack),
+        ]
 
-const playFieldScale = 4;
-const field = new Konva.Rect({
-    x: window.screenX + window.innerWidth / playFieldScale,
-    y: window.screenY + window.innerHeight / playFieldScale,
-    width: window.innerWidth / 2,
-    height: window.innerHeight / 2,
-    fill: "blue",
-});
-field.setAttr("metadata", {
-    name: "PlayField",
-});
+        for (let [index, card] of cards.entries()) {
+            let position = { x: INIT_POS.x + SPACE * index, y : INIT_POS.y };
+            let c = this.visualizeCard(card, position);
 
-layer.add(field);
+            this.layer.add(c);
+        } 
+    }
 
+    visualizeCard(card: Card, pos: Vector2d): Konva.Image {
 
-stage.add(layer);
-stage.add(dragLayer);
+        const imageObj = new Image();
+        imageObj.src = card.getImageName();
 
-function loadHand() {
-    
+        return new Konva.Image({
+            x: pos.x,
+            y: pos.y,
+            image: imageObj,
+            width: imageObj.width / IMAGE_SCALE,
+            height: imageObj.height / IMAGE_SCALE,
+            draggable: true
+        }).setAttr("metadata", {
+            "suit" : card.suit,
+            "rank" : card.rank
+        });
+    }
 }
