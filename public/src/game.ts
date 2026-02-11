@@ -12,8 +12,9 @@ const stage = new Konva.Stage({
 const layer = new Konva.Layer();
 const dragLayer = new Konva.Layer();
 
-let board = new Board(layer);
-board.visualizeHand();
+let board = new Board(layer, stage);
+board.visualizePlayerHand();
+board.visualizeBacks();
 
 stage.add(layer);
 

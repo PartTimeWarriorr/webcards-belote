@@ -1,4 +1,5 @@
 import Konva from 'konva';
+import { Vector2d } from 'konva/lib/types';
 
 export enum Suit {
     Hearts = 'H',
@@ -29,5 +30,23 @@ export class Card {
 
     getImageName(): string {
         return '/cards/' + this.rank + this.suit + '.svg';
+    }
+
+    visualize(pos: Vector2d, scale: number): Konva.Image {
+
+        const imageObj = new Image();
+        imageObj.src = this.getImageName();
+
+        return new Konva.Image({
+            x: pos.x,
+            y: pos.y,
+            image: imageObj,
+            width: imageObj.width / scale,
+            height: imageObj.height / scale,
+            draggable: true
+        }).setAttr("metadata", {
+            "suit" : this.suit,
+            "rank" : this.rank
+        });
     }
 }
