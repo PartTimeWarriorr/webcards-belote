@@ -1,7 +1,9 @@
 import Konva from "konva";
-import { Card, Suit, Rank } from "./card.js";
+import { Card, Suit, Rank } from "../../shared/card.js";
 import { Vector2d } from "konva/lib/types";
 import { CardImage } from "./types.js";
+
+import { getCardImagePath } from "./socket.js";
 
 const cardBack = "/cards/1B.svg";
 const IMAGE_SCALE = 2;
@@ -15,6 +17,8 @@ export class Board {
     layer: Konva.Layer;
     dragLayer: Konva.Layer;
     stage: Konva.Stage;
+
+    hand: Array<Card> = new Array();
 
     constructor(
         layer: Konva.Layer,
@@ -142,21 +146,22 @@ export class Board {
     }
 
     async visualizePlayerHand() {
-        let cards: Array<Card> = [
-            new Card(Suit.Clubs, Rank.Ace),
-            new Card(Suit.Clubs, Rank.Eight),
-            new Card(Suit.Clubs, Rank.Queen),
-            new Card(Suit.Diamonds, Rank.Seven),
-            new Card(Suit.Spades, Rank.Jack),
-            new Card(Suit.Clubs, Rank.Jack),
-            new Card(Suit.Clubs, Rank.Seven),
-            new Card(Suit.Hearts, Rank.Seven),
-        ];
+        // let cards: Array<Card> = [
+        //     new Card(Suit.Clubs, Rank.Ace),
+        //     new Card(Suit.Clubs, Rank.Eight),
+        //     new Card(Suit.Clubs, Rank.Queen),
+        //     new Card(Suit.Diamonds, Rank.Seven),
+        //     new Card(Suit.Spades, Rank.Jack),
+        //     new Card(Suit.Clubs, Rank.Jack),
+        //     new Card(Suit.Clubs, Rank.Seven),
+        //     new Card(Suit.Hearts, Rank.Seven),
+        // ];
+        let cards = this.hand;
 
         let initPosition: Vector2d = { x: 350, y: 1 };
         for (let [index, card] of cards.entries()) {
             let cardImage: CardImage = await this.getCardObject(
-                card,
+                new Card(card.suit, card.rank),
                 initPosition,
             );
 
@@ -170,9 +175,7 @@ export class Board {
         }
     }
 
-    async visualizeAlly(
-        numberCards: number,
-    ) {
+    async visualizeAlly(numberCards: number) {
         let initPosition = { x: 350, y: 0 };
 
         for (let i = 0; i < numberCards; ++i) {
@@ -184,26 +187,33 @@ export class Board {
     }
 
     async visualizeOpps(numberLeft: number, numberRight: number) {
-        let initPositionLeft = { x: 200, y: window.innerHeight / 2 - 300};
-        let initPositionRight = { x: 0, y: window.innerHeight / 2 - 300};
+        let initPositionLeft = { x: 200, y: window.innerHeight / 2 - 300 };
+        let initPositionRight = { x: 0, y: window.innerHeight / 2 - 300 };
 
         for (let i = 0; i < numberLeft; ++i) {
-            let position = { x: initPositionLeft.x, y: initPositionLeft.y + SPACE_VERTICAL * i};
+            let position = {
+                x: initPositionLeft.x,
+                y: initPositionLeft.y + SPACE_VERTICAL * i,
+            };
             let cardImage = await this.getCardBackObject(position, 90);
 
             this.layer.add(cardImage);
         }
 
         for (let i = 0; i < numberRight; ++i) {
-            let position = { x: initPositionRight.x, y: initPositionRight.y + SPACE_VERTICAL * i};
+            let position = {
+                x: initPositionRight.x,
+                y: initPositionRight.y + SPACE_VERTICAL * i,
+            };
             let cardImage = await this.getCardBackObject(position, 90);
 
-            let v : Vector2d = { x: window.innerWidth - cardImage.getWidth(), y: position.y };
+            let v: Vector2d = {
+                x: window.innerWidth - cardImage.getWidth(),
+                y: position.y,
+            };
             cardImage.setPosition(v);
 
             this.layer.add(cardImage);
         }
-
-
     }
 }

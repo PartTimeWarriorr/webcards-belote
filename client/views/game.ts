@@ -1,5 +1,6 @@
 import Konva from "konva";
 import { Board } from "../src/board";
+import { updateHand } from "../src/socket";
 
 export function renderGame() {
     const app = document.getElementById("app")!;
@@ -18,4 +19,10 @@ export function renderGame() {
     board.visualizePlayerHand();
     board.visualizeAlly(8);
     board.visualizeOpps(8, 8);
+
+    updateHand(hand => {
+        board.hand = hand;
+        console.log(hand);
+        board.visualizePlayerHand();
+    });
 }

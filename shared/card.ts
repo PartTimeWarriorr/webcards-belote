@@ -1,6 +1,6 @@
-import Konva from "konva";
-import { CardImage } from "./types";
-import { Vector2d } from "konva/lib/types";
+// import Konva from "konva";
+// import { CardImage } from "../client/src/types";
+// import { Vector2d } from "konva/lib/types";
 
 export enum Suit {
     Hearts = "H",
@@ -21,7 +21,7 @@ export enum Rank {
 }
 
 // zasega samo vsichko koz
-const power : Map<Rank, number> = new Map([
+const power: Map<Rank, number> = new Map([
     [Rank.Jack, 20],
     [Rank.Nine, 14],
     [Rank.Ace, 11],
@@ -29,7 +29,7 @@ const power : Map<Rank, number> = new Map([
     [Rank.King, 4],
     [Rank.Queen, 3],
     [Rank.Eight, 2],
-    [Rank.Seven, 1]
+    [Rank.Seven, 1],
 ]);
 
 export class Card {
@@ -47,6 +47,6 @@ export class Card {
 
     // doubles as score rn
     getCardPower(): number {
-        return power.get(this.rank)!; 
+        return power.get(this.rank)!;
     }
 }

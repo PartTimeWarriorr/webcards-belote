@@ -1,16 +1,16 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
+        "strict": true,
         "target": "ES2020",
-        "module": "CommonJS", // Node runtime
-        "rootDir": "src", // Source files
+        "module": "esnext", // Node runtime
         "outDir": "dist", // Compiled JS
         "esModuleInterop": true, // Node import compatibility
         "moduleResolution": "Node",
         "types": ["node"],
         "baseUrl": ".", // For path aliases
         "paths": {
-            "@shared/*": ["../shared/*"] // Shared types
+            "@shared/*": ["../../shared/*"] // Shared types
         }
     },
     "include": ["src"]
