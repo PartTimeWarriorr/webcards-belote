@@ -1,0 +1,17 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "target": "ES2020", // Modern browsers
+        "module": "ESNext", // Use ES modules
+        "moduleResolution": "Bundler", // Vite uses esbuild
+        "lib": ["DOM", "ES2020"], // Browser APIs
+        "jsx": "preserve", // If using JSX/React
+        "noEmit": true, // Vite handles output
+        "baseUrl": ".", // For path aliases
+        "paths": {
+            "@/*": ["src/*"],
+            "@shared/*": ["../shared/*"]
+        }
+    },
+    "include": ["src", "views/game.ts", "views/home.ts"]
+}

@@ -14,26 +14,14 @@
         "url": "git+https://github.com/PartTimeWarriorr/webcards-belote.git"
     },
     "license": "ISC",
-    "author": "",
+    "author": "gosho",
     "type": "module",
-    "main": "server.js",
     "scripts": {
-        "build": "tsc && vite build",
-        "start": "node server.js",
-        "dev": "npm run build & npm run start"
-    },
-    "dependencies": {
-        "express": "^5.2.1",
-        "konva": "^10.2.0",
-        "matter": "^0.2.0"
+        "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\""
     },
     "devDependencies": {
-        "@types/express": "^5.0.6",
-        "@types/node": "^25.2.0",
-        "@types/socket.io": "^3.0.1",
-        "nodemon": "^3.1.11",
+        "concurrently": "^9.2.1",
         "ts-node": "^10.9.2",
-        "typescript": "^5.9.3",
-        "vite": "^7.3.1"
+        "typescript": "^5.9.3"
     }
 }
