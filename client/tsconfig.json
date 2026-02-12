@@ -13,5 +13,5 @@
             "@shared/*": ["../shared/*"]
         }
     },
-    "include": ["src", "views/game.ts", "views/home.ts"]
+    "include": ["src", "views/Game.ts", "views/Home.ts"]
 }

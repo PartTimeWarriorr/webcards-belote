@@ -1,6 +1,21 @@
-import { navigate } from "main";
+import Konva from "konva";
+import { Board } from "../src/board";
 
 export function renderGame() {
     const app = document.getElementById("app")!;
-    app.innerHTML = `<div id="container">Game</div>`;
+    app.innerHTML = `<div id="container"></div>`;
+
+    const stage = new Konva.Stage({
+        container: "container",
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
+
+    const layer = new Konva.Layer();
+    const dragLayer = new Konva.Layer();
+
+    let board = new Board(layer, dragLayer, stage);
+    board.visualizePlayerHand();
+    board.visualizeAlly(8);
+    board.visualizeOpps(8, 8);
 }
