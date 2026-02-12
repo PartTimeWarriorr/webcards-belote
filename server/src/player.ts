@@ -1,8 +1,7 @@
-import { Card } from '../../shared/card';
+import { Card } from "./card";
 export class Player {
-
-    id : string;
-    hand : Array<Card> = new Array<Card>();
+    id: string;
+    hand: Array<Card> = new Array<Card>();
 
     constructor(id: string) {
         this.id = id;

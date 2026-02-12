@@ -1,12 +1,13 @@
 import io from "socket.io-client";
-import { Card } from "../../shared/card";
+import { CardRaw } from "@shared/types";
+import { Suit, Rank } from "@shared/types";
 
 export const socket = io();
 
-export function updateHand(callback: (cards: Array<Card>) => void) {
+export function updateHand(callback: (cards: Array<CardRaw>) => void) {
     socket.on("updateHand", callback);
 }
 
-export function getCardImagePath(suit: string, rank: string) {
-    return '/cards/' + rank + suit + '.svg'; 
+export function getCardImagePath(suit: Suit, rank: Rank) {
+    return "/cards/" + rank + suit + ".svg";
 }

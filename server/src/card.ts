@@ -1,24 +1,4 @@
-// import Konva from "konva";
-// import { CardImage } from "../client/src/types";
-// import { Vector2d } from "konva/lib/types";
-
-export enum Suit {
-    Hearts = "H",
-    Clubs = "C",
-    Diamonds = "D",
-    Spades = "S",
-}
-
-export enum Rank {
-    Ace = "A",
-    Seven = "7",
-    Eight = "8",
-    Nine = "9",
-    Ten = "T",
-    Jack = "J",
-    Queen = "Q",
-    King = "K",
-}
+import { Suit, Rank } from "../../shared/types";
 
 // zasega samo vsichko koz
 const power: Map<Rank, number> = new Map([
@@ -39,10 +19,6 @@ export class Card {
     constructor(suit: Suit, rank: Rank) {
         this.suit = suit;
         this.rank = rank;
-    }
-
-    getImageName(): string {
-        return "/cards/" + this.rank + this.suit + ".svg";
     }
 
     // doubles as score rn

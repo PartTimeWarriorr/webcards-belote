@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { Card, Suit, Rank } from "../../shared/card.js";
+import { Suit, Rank, CardRaw } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardImage } from "./types.js";
 
@@ -13,26 +13,17 @@ const SPACE_VERTICAL = 50;
 const PLAYFIELD_SCALE = 4;
 
 export class Board {
-    deck: Array<Card> = new Array();
     layer: Konva.Layer;
     dragLayer: Konva.Layer;
     stage: Konva.Stage;
 
-    hand: Array<Card> = new Array();
+    hand: Array<CardRaw> = new Array();
 
     constructor(
         layer: Konva.Layer,
         dragLayer: Konva.Layer,
         stage: Konva.Stage,
     ) {
-        // Add all cards to deck
-        for (let s of Object.values(Suit)) {
-            for (let r of Object.values(Rank).filter(
-                (v): v is Rank => typeof v === "number",
-            )) {
-                this.deck.push(new Card(s, r));
-            }
-        }
 
         this.layer = layer;
         this.dragLayer = dragLayer;
@@ -80,10 +71,10 @@ export class Board {
         });
     }
 
-    async getCardObject(card: Card, position: Vector2d): Promise<CardImage> {
+    async getCardObject(card: CardRaw, position: Vector2d): Promise<CardImage> {
         return new Promise((resolve) => {
             const image = new Image();
-            image.src = card.getImageName();
+            image.src = getCardImagePath(card.suit, card.rank);
 
             image.onload = () => {
                 const konvaObj = new Konva.Image({
@@ -161,7 +152,7 @@ export class Board {
         let initPosition: Vector2d = { x: 350, y: 1 };
         for (let [index, card] of cards.entries()) {
             let cardImage: CardImage = await this.getCardObject(
-                new Card(card.suit, card.rank),
+                card,
                 initPosition,
             );
 
