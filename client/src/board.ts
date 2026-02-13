@@ -1,7 +1,7 @@
 import Konva from "konva";
-import { Suit, Rank, CardRaw } from "../../shared/types.js";
+import { CardRaw } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
-import { CardImage } from "./types.js";
+import { CardObject } from "./types.js";
 
 import { getCardImagePath } from "./socket.js";
 
@@ -71,7 +71,7 @@ export class Board {
         });
     }
 
-    async getCardObject(card: CardRaw, position: Vector2d): Promise<CardImage> {
+    async getCardObject(card: CardRaw, position: Vector2d): Promise<CardObject> {
         return new Promise((resolve) => {
             const image = new Image();
             image.src = getCardImagePath(card.suit, card.rank);
@@ -88,7 +88,7 @@ export class Board {
                     dragStartY: 0,
                     suit: card.suit,
                     rank: card.rank,
-                }) as CardImage;
+                }) as CardObject;
 
                 konvaObj.on("mouseover", () => {
                     document.body.style.cursor = "pointer";
@@ -98,20 +98,19 @@ export class Board {
                     document.body.style.cursor = "default";
                 });
 
-                konvaObj.on("dragstart", (e) => {
+                konvaObj.on("dragstart", () => {
                     konvaObj.moveTo(this.dragLayer);
                     konvaObj.dragStartX = konvaObj.x();
                     konvaObj.dragStartY = konvaObj.y();
                     console.log(konvaObj.dragStartX, konvaObj.dragStartY);
                 });
 
-                konvaObj.on("dragend", (e) => {
+                konvaObj.on("dragend", () => {
                     const position = this.stage.getPointerPosition();
 
                     // TODO: socket.playCard()
 
                     if (position == null) {
-                        console.log("opaaa");
                         return;
                     }
 
@@ -137,32 +136,22 @@ export class Board {
     }
 
     async visualizePlayerHand() {
-        // let cards: Array<Card> = [
-        //     new Card(Suit.Clubs, Rank.Ace),
-        //     new Card(Suit.Clubs, Rank.Eight),
-        //     new Card(Suit.Clubs, Rank.Queen),
-        //     new Card(Suit.Diamonds, Rank.Seven),
-        //     new Card(Suit.Spades, Rank.Jack),
-        //     new Card(Suit.Clubs, Rank.Jack),
-        //     new Card(Suit.Clubs, Rank.Seven),
-        //     new Card(Suit.Hearts, Rank.Seven),
-        // ];
         let cards = this.hand;
 
         let initPosition: Vector2d = { x: 350, y: 1 };
         for (let [index, card] of cards.entries()) {
-            let cardImage: CardImage = await this.getCardObject(
+            let cardObject: CardObject = await this.getCardObject(
                 card,
                 initPosition,
             );
 
             let v: Vector2d = {
                 x: initPosition.x + SPACE * index,
-                y: window.innerHeight - cardImage.getHeight(),
+                y: window.innerHeight - cardObject.getHeight(),
             };
-            cardImage.setPosition(v);
+            cardObject.setPosition(v);
 
-            this.layer.add(cardImage);
+            this.layer.add(cardObject);
         }
     }
 
@@ -171,9 +160,9 @@ export class Board {
 
         for (let i = 0; i < numberCards; ++i) {
             let position = { x: initPosition.x + SPACE * i, y: initPosition.y };
-            let cardImage = await this.getCardBackObject(position, 0);
+            let cardObject = await this.getCardBackObject(position, 0);
 
-            this.layer.add(cardImage);
+            this.layer.add(cardObject);
         }
     }
 
@@ -186,9 +175,9 @@ export class Board {
                 x: initPositionLeft.x,
                 y: initPositionLeft.y + SPACE_VERTICAL * i,
             };
-            let cardImage = await this.getCardBackObject(position, 90);
+            let cardObject = await this.getCardBackObject(position, 90);
 
-            this.layer.add(cardImage);
+            this.layer.add(cardObject);
         }
 
         for (let i = 0; i < numberRight; ++i) {
@@ -196,15 +185,15 @@ export class Board {
                 x: initPositionRight.x,
                 y: initPositionRight.y + SPACE_VERTICAL * i,
             };
-            let cardImage = await this.getCardBackObject(position, 90);
+            let cardObject = await this.getCardBackObject(position, 90);
 
             let v: Vector2d = {
-                x: window.innerWidth - cardImage.getWidth(),
+                x: window.innerWidth - cardObject.getWidth(),
                 y: position.y,
             };
-            cardImage.setPosition(v);
+            cardObject.setPosition(v);
 
-            this.layer.add(cardImage);
+            this.layer.add(cardObject);
         }
     }
 }
