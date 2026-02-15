@@ -1,6 +1,9 @@
 import Konva from "konva";
 import { Board } from "../src/board";
-import { updateHand } from "../src/socket";
+import { updateBoard, updateHand, welcome } from "../src/socket";
+import { BoardState } from "@shared/types";
+
+let playerId : string | null = null;
 
 export function renderGame() {
     const app = document.getElementById("app")!;
@@ -26,13 +29,30 @@ export function renderGame() {
     const dragLayer = new Konva.Layer();
 
     let board = new Board(layer, dragLayer, stage);
-    board.visualizePlayerHand();
-    board.visualizeAlly(8);
-    board.visualizeOpps(8, 8);
+    // board.visualizePlayerHand();
+    // board.visualizeAlly(8);
+    // board.visualizeOpps(8, 8);
 
-    updateHand((hand) => {
-        board.hand = hand;
-        console.log(hand);
+    // updateHand((hand) => {
+    //     board.hand = hand;
+    //     console.log(hand);
+    //     board.visualizePlayerHand();
+    // });
+
+    welcome((id) => {
+        playerId = id;
+    });
+
+    updateBoard((boardState: BoardState) => {
+        boardState.players.forEach((p) => {
+            if (p.id === playerId) {
+                console.log(`${playerId} found`);
+                board.hand = p.hand;
+            }
+        });
+        board.clearAllCards();
         board.visualizePlayerHand();
+        board.visualizeAlly(8);
+        board.visualizeOpps(8, 8);
     });
 }

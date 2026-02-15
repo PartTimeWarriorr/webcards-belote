@@ -1,4 +1,4 @@
-import { Suit, Rank } from "../../shared/types";
+import { Suit, Rank, CardRaw } from "../../shared/types";
 
 // zasega samo vsichko koz
 const power: Map<Rank, number> = new Map([
@@ -19,6 +19,10 @@ export class Card {
     constructor(suit: Suit, rank: Rank) {
         this.suit = suit;
         this.rank = rank;
+    }
+
+    toRaw() : CardRaw {
+        return { suit: this.suit, rank: this.rank };
     }
 
     // doubles as score rn

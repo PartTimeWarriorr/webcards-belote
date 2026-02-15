@@ -21,3 +21,14 @@ export interface CardRaw {
     suit: Suit,
     rank: Rank
 }
+
+export interface PlayerRaw {
+    id: string,
+    hand: Array<CardRaw>,
+    team: string
+}
+
+export interface BoardState {
+    players: Array<PlayerRaw>,
+    turn: string,
+}

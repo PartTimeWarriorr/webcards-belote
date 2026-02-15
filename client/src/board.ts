@@ -47,6 +47,15 @@ export class Board {
         this.layer.add(field);
     }
 
+    clearAllCards() {
+        console.log("Clearing hand");
+        this.layer.children.forEach((c) => {
+            if (c.className === "Image") {
+                c.destroy();
+            }
+        })
+    }
+
     async getCardBackObject(
         position: Vector2d,
         rotationDegrees: number,
@@ -136,6 +145,7 @@ export class Board {
     }
 
     async visualizePlayerHand() {
+        console.log("Visualizing hand");
         let cards = this.hand;
 
         let initPosition: Vector2d = { x: 350, y: 1 };

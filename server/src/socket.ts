@@ -1,20 +1,10 @@
 import { Server } from "socket.io";
 import { Player } from "./player";
 import { Card } from "./card";
-import { Suit, Rank } from "../../shared/types";
+import { Suit, Rank, BoardState, CardRaw, PlayerRaw } from "../../shared/types";
+import { dealCards } from "./game";
 
 const players = new Map<string, Player>();
-
-const deck: Array<Card> = new Array();
-
-// Add all cards to deck
-for (let s of Object.values(Suit)) {
-    for (let r of Object.values(Rank).filter(
-        (v): v is Rank => typeof v === "number",
-    )) {
-        deck.push(new Card(s, r));
-    }
-}
 
 export function setupSocket(server: any) {
     const io = new Server(server);
@@ -22,14 +12,24 @@ export function setupSocket(server: any) {
     io.on("connection", (socket) => {
         console.log(`A user connected: ${socket}`);
         console.log(`User id: ${socket.id}`);
-        players.set(socket.id, new Player(socket.id));
 
-        setTimeout(() => {
-            // console.log("aaa");
-            io.to(socket.id).emit("updateHand", [
-                new Card(Suit.Clubs, Rank.Ace),
-            ]);
-        }, 3000);
+        socket.emit("welcome", socket.id);
+
+        players.set(socket.id, new Player(socket.id, "green"));
+
+        if (players.size === 4) {
+            dealCards(players);
+            const playersRaw = Array.from(players.values(), (p) => p.toRaw());
+            const boardState: BoardState = {
+                players: playersRaw,
+                turn: socket.id,
+            };
+            io.emit("updateBoard", boardState);
+        }
+
+        if (players.size > 4) {
+            players.delete(socket.id);
+        }
 
         socket.on("disconnect", () => {
             console.log(`A user disconnected: ${socket}`);
