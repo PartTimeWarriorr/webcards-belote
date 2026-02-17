@@ -1,9 +1,12 @@
 import Konva from "konva";
 import { Board } from "../src/board";
-import { updateBoard, updateHand, welcome } from "../src/socket";
+import { joinTeam, updateBoard, welcome } from "../src/socket";
 import { BoardState } from "@shared/types";
 
 let playerId : string | null = null;
+let playerTeam : string | null = null;
+let allyId : string | null = null;
+let allyCardCount : number = 0;
 
 export function renderGame() {
     const app = document.getElementById("app")!;
@@ -43,16 +46,25 @@ export function renderGame() {
         playerId = id;
     });
 
+    joinTeam((team) => {
+        playerTeam = team;
+    })
+
     updateBoard((boardState: BoardState) => {
         boardState.players.forEach((p) => {
             if (p.id === playerId) {
-                console.log(`${playerId} found`);
                 board.hand = p.hand;
             }
+            if (p.team === playerTeam && p.id !== playerId) {
+                allyId = p.id;
+                allyCardCount = p.hand.length;
+            }
         });
+
         board.clearAllCards();
         board.visualizePlayerHand();
-        board.visualizeAlly(8);
+        board.visualizeAlly(allyCardCount);
         board.visualizeOpps(8, 8);
+        board.visualizePlayField(boardState, playerId, allyId);
     });
 }

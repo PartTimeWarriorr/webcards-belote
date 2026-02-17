@@ -2,7 +2,7 @@
     "extends": "../tsconfig.json",
     "compilerOptions": {
         "strict": true,
-        "target": "ES2020",
+        "target": "es2020",
         "module": "esnext", // Node runtime
         "outDir": "dist", // Compiled JS
         "esModuleInterop": true, // Node import compatibility
@@ -10,7 +10,7 @@
         "types": ["node"],
         "baseUrl": ".", // For path aliases
         "paths": {
-            "@shared/*": ["../../shared/*"] // Shared types
+            "@shared/*": ["../shared/*"] // Shared types
         }
     },
     "include": ["src"]

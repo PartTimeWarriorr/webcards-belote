@@ -31,4 +31,5 @@ export interface PlayerRaw {
 export interface BoardState {
     players: Array<PlayerRaw>,
     turn: string,
+    playedCards: [string, CardRaw][]
 }

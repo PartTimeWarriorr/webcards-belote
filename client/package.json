@@ -4,7 +4,7 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "@types/socket.io-client": "^1.4.36",
+        "@types/socket.io": "^3.0.1",
         "typescript": "^5.9.3",
         "vite": "^7.3.1"
     },

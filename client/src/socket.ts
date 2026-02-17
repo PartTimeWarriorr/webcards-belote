@@ -1,11 +1,9 @@
 import io from "socket.io-client";
-import { Suit, Rank, CardRaw, BoardState } from "@shared/types";
+import { CardRaw, BoardState } from "@shared/types";
+import type { Socket } from "socket.io-client";
+import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
 
-export const socket = io();
-
-export function updateHand(callback: (cards: Array<CardRaw>) => void) {
-    socket.on("updateHand", callback);
-}
+export const socket : Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
 export function updateBoard(callback: (state: BoardState) => void) {
     socket.on("updateBoard", callback);
@@ -19,6 +17,10 @@ export function welcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);
 }
 
-export function getCardImagePath(suit: Suit, rank: Rank) {
-    return "/cards/" + rank + suit + ".svg";
+// export function updateHand(callback: (cards: Array<CardRaw>) => void) {
+//     socket.on("updateHand", callback);
+// }
+
+export function joinTeam(callback: (team: string) => void) {
+    socket.on("joinTeam", callback);
 }

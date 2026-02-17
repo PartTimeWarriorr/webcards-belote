@@ -1,4 +1,4 @@
-import { PlayerRaw } from "../../shared/types";
+import { PlayerRaw } from "@shared/types";
 import { Card } from "./card";
 export class Player {
     id: string;

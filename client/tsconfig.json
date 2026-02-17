@@ -1,11 +1,11 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "target": "ES2020", // Modern browsers
-        "module": "ESNext", // Use ES modules
-        "moduleResolution": "Bundler", // Vite uses esbuild
+        "strict": true,
+        "target": "es2020", // Modern browsers
+        "module": "esnext", // Use ES modules
+        "moduleResolution": "bundler", // Vite uses esbuild
         "lib": ["DOM", "ES2020"], // Browser APIs
-        "jsx": "preserve", // If using JSX/React
         "noEmit": true, // Vite handles output
         "baseUrl": ".", // For path aliases
         "paths": {

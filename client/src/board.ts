@@ -1,9 +1,10 @@
 import Konva from "konva";
-import { CardRaw } from "../../shared/types.js";
+import { BoardState, CardRaw } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
-import { getCardImagePath } from "./socket.js";
+import { getCardImagePath } from "./utils.js";
+import { playCard } from "./socket.js";
 
 const cardBack = "/cards/1B.svg";
 const IMAGE_SCALE = 2;
@@ -11,6 +12,11 @@ const INIT_POSITION: Vector2d = { x: 0, y: 0 };
 const SPACE = 150;
 const SPACE_VERTICAL = 50;
 const PLAYFIELD_SCALE = 4;
+
+const SOUTH : Vector2d = { x: 900, y: 525 };
+const NORTH : Vector2d = { x: 900, y: 200 };
+const WEST : Vector2d = { x: 700, y: 400 };
+const EAST : Vector2d = { x: 1100, y: 400 };
 
 export class Board {
     layer: Konva.Layer;
@@ -48,8 +54,8 @@ export class Board {
     }
 
     clearAllCards() {
-        console.log("Clearing hand");
-        this.layer.children.forEach((c) => {
+        const children = [...this.layer.children];
+        children.forEach((c) => {
             if (c.className === "Image") {
                 c.destroy();
             }
@@ -115,26 +121,25 @@ export class Board {
                 });
 
                 konvaObj.on("dragend", () => {
-                    const position = this.stage.getPointerPosition();
+                    const position = this.stage.getPointerPosition()!;
 
                     // TODO: socket.playCard()
+                    // const shape = this.layer.getIntersection(position);
 
-                    if (position == null) {
-                        return;
-                    }
-
-                    const shape = this.layer.getIntersection(position);
-
-                    let name = "";
-                    if (shape != null) {
-                        name = shape.getAttr("name") ?? name;
-                    }
+                    // let name = "";
+                    // if (shape != null) {
+                    //     name = shape.getAttr("name") ?? name;
+                    // }
+                    const name = this.layer.getIntersection(position)?.getAttr("name") ?? "";
 
                     const startPosition: Vector2d = {
                         x: konvaObj.dragStartX,
                         y: konvaObj.dragStartY,
                     };
-                    if (name != "PlayField") {
+
+                    if (name == "PlayField") {
+                        playCard(card);
+                    } else {
                         konvaObj.setPosition(startPosition);
                     }
                 });
@@ -204,6 +209,30 @@ export class Board {
             cardObject.setPosition(v);
 
             this.layer.add(cardObject);
+        }
+    }
+
+    async visualizePlayField(boardState: BoardState, playerId: string | null, allyId: string | null) {
+        // const playerHand : CardRaw[] = boardState.players.find(p => p.id === playerId)?.hand ?? [];
+        const playedCards = boardState.playedCards;
+
+        // for (const pid of playedCards.keys()) {
+        //     if (pid === allyId) {
+        //         let north = await this.getCardObject(playedCards.get(allyId)!, NORTH);
+        //         this.layer.add(north);
+        //     }
+        // }
+        // const card = playedCards?.get(allyId!);
+        // if (card) {
+        //     const north = await this.getCardObject(card, NORTH);
+        //     this.layer.add(north);
+        // }
+
+        for (const [pid, card] of playedCards) {
+            if (pid === allyId) {
+                let north = await this.getCardObject(card, NORTH);
+                this.layer.add(north);
+            }
         }
     }
 }
