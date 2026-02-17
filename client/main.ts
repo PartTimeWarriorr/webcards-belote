@@ -1,7 +1,7 @@
 import { renderHome } from "./views/Home";
 import { renderGame } from "./views/Game";
 
-let currentPage = "game";
+let currentPage = "home";
 
 export function navigate(pageName: string) {
     currentPage = pageName;

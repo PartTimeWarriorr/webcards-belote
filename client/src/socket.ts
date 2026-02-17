@@ -1,5 +1,5 @@
 import io from "socket.io-client";
-import { CardRaw, BoardState } from "@shared/types";
+import { CardRaw, BoardState, JoinRoomPayload } from "@shared/types";
 import type { Socket } from "socket.io-client";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
 
@@ -23,4 +23,13 @@ export function welcome(callback: (playerId: string) => void) {
 
 export function joinTeam(callback: (team: string) => void) {
     socket.on("joinTeam", callback);
+}
+
+export function joinRoom(room: string, teamPref: string) {
+    const payload : JoinRoomPayload = { roomName: room, teamPref: teamPref };
+    socket.emit("joinRoom", payload);
+}
+
+export function joinedRoom(callback: (payload: JoinRoomPayload) => void) {
+    socket.on("joinedRoom", callback);
 }

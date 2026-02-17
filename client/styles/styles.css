@@ -28,3 +28,47 @@ body {
     border-radius: 5px;
     border: none;
 }
+
+.modal {
+    background-color: white;
+    width: 30%;
+    margin: auto; 
+    margin-top: 5%;
+    min-height: 20%;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.stepper {
+    overflow: hidden;
+}
+
+.stepper-track {
+    width: 200%;
+    display: flex;
+    transition: transform 0.2s ease;
+}
+
+.stepper-track.step-2 {
+    transform: translateX(-50%);
+}
+
+.step {
+    width: 50%;
+    padding: 7rem;
+    box-sizing: border-box;
+}
+
+.btn-blue {
+    border-radius: 50%;
+    padding: 4rem;
+    background-color: blue;
+    border: none;
+}
+
+.btn-yellow {
+    border-radius: 50%;
+    padding: 4rem;
+    background-color: yellow;
+    border: none;
+}

@@ -5,9 +5,13 @@ import { dealCards } from "./game";
 import { Card } from "./card";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
 import { serializeMap } from "./utils";
+import { instrument } from '@socket.io/admin-ui';
+import { Room } from "./room";
 
 const players = new Map<string, Player>();
 const playedCards = new Map<string, CardRaw>();
+
+const room = new Room("Game_1");
 
 const deck: Array<Card> = new Array();
 
@@ -25,7 +29,16 @@ let flag = false;
 // console.log(cards_2);
 
 export function setupSocket(server: any) {
-    const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+    const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
+        cors: {
+            origin: ["https://admin.socket.io"],
+            credentials: true
+        }
+    });
+
+    instrument(io, {
+        auth: false
+    });
 
     io.on("connection", (socket) => {
         console.log(`A user connected: ${socket}`);
@@ -33,7 +46,7 @@ export function setupSocket(server: any) {
 
         socket.emit("welcome", socket.id);
 
-        players.set(socket.id, new Player(socket.id, "green"));
+        players.set(socket.id, new Player(socket.id));
 
         socket.emit("joinTeam", "green");
 
@@ -43,7 +56,7 @@ export function setupSocket(server: any) {
                 flag = !flag;
                 p.dealCards(cards);
             }
-        })
+        });
 
         const playersRaw = Array.from(players.values(), (p) => p.toRaw());
         const boardState: BoardState = {
@@ -68,11 +81,25 @@ export function setupSocket(server: any) {
         //     players.delete(socket.id);
         // }
 
+        socket.on("joinRoom", (payload) => {
+            const { roomName, teamPref } = {...payload};
+            const player = players.get(socket.id);
+
+            if (!player) {
+                console.log(`Player not found ${socket.id}`);
+                return;
+            }
+            room.join(player, teamPref as "blue" | "yellow", socket);
+            socket.emit("joinedRoom", payload);
+
+            console.log(room);
+        });
+
         socket.on("playCard", (card) => {
             console.log(card);
             players.get(socket.id)?.hand.filter((c) => c.rank !== card.rank || c.suit !== card.suit);
             playedCards.set(socket.id, card);
-            const playersRaw = Array.from(players.values(), (p) => p.toRaw());
+            const playersRaw = Array.from(players.values(), (p) => p.toRaw(room));
             const boardState : BoardState = {
                 players: playersRaw,
                 turn: socket.id,

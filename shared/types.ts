@@ -25,11 +25,16 @@ export interface CardRaw {
 export interface PlayerRaw {
     id: string,
     hand: Array<CardRaw>,
-    team: string
+    team?: string
 }
 
 export interface BoardState {
     players: Array<PlayerRaw>,
     turn: string,
     playedCards: [string, CardRaw][]
+}
+
+export interface JoinRoomPayload {
+    roomName: string,
+    teamPref: string
 }

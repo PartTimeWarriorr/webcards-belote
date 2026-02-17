@@ -1,17 +1,36 @@
+import { joinedRoom, joinRoom } from "../src/socket";
 import { navigate } from "../main";
 
 export function renderHome() {
     const app = document.getElementById("app")!;
 
-    app.innerHTML = `<div class="main-menu">
-        <button id="createLobbyBtn" class="btn-main">Create Lobby</button>
-        <button id="joinLobbyBtn" class="btn-main">Join Lobby</button>
-    </div>
-    <script type="module" src="src/home.ts"></script>
-    `;
+    app.innerHTML = `        <div id="joinLobbyModal" class="modal stepper">
+            <div id="joinLobbyTrack" class="stepper-track">
+                <div class="step">
+                    <button id="joinLobbyBtn" class="btn-main btn-slider">Join Lobby</button>
+                </div>
+                <div class="step">
+                    <button id="joinBlueBtn" class="btn-blue">Blue</button>
+                    <button id="joinYellowBtn" class="btn-yellow">Yellow</button>
+                </div>
+            </div>
+        </div>`
 
+    const stepper = document.getElementById("joinLobbyTrack");
     const joinLobbyBtn = document.getElementById("joinLobbyBtn");
+    
     joinLobbyBtn?.addEventListener('click', () => {
-        navigate("game");    
+        stepper?.classList.add("step-2");
+    });
+
+    const joinBlueBtn = document.getElementById("joinBlueBtn");
+    const joinYellowBtn = document.getElementById("joinYellowBtn");
+
+    joinBlueBtn?.addEventListener('click', () => {
+        joinRoom("Game_1", "blue");
+    });
+
+    joinYellowBtn?.addEventListener('click', () => {
+        joinRoom("Game_1", "yellow");
     });
 }
