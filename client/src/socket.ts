@@ -1,5 +1,5 @@
 import io from "socket.io-client";
-import { CardRaw, BoardState, JoinRoomPayload } from "@shared/types";
+import { CardRaw, BoardState, JoinRoomPayload, GameConfig } from "@shared/types";
 import type { Socket } from "socket.io-client";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
 
@@ -32,4 +32,8 @@ export function joinRoom(room: string, teamPref: string) {
 
 export function joinedRoom(callback: (payload: JoinRoomPayload) => void) {
     socket.on("joinedRoom", callback);
+}
+
+export function startGame(callback: (gameConfig: GameConfig) => void) {
+    socket.on("startGame", callback);
 }

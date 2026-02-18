@@ -38,3 +38,11 @@ export interface JoinRoomPayload {
     roomName: string,
     teamPref: string
 }
+
+export interface GameConfig {
+    playerId: string,
+    seats: Seats,
+    teams: Record<string, string>
+}
+
+export type Seats = [string, string, string, string];

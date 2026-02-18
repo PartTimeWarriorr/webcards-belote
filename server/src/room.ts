@@ -1,6 +1,7 @@
 import { Socket } from "socket.io";
 import { Player } from "./player";
 import { Team } from "./team";
+import { Seats } from "@shared/types";
 
 const TEAM_NAMES : string[] = ["blue", "yellow"]
 
@@ -55,10 +56,18 @@ export class Room {
         throw new Error("No such team name");
     }
 
+    isFull() : boolean {
+        return this.blueTeam.isFull() && this.yellowTeam.isFull();
+    }
+
     getPlayerTeam(playerId: string) : "blue" | "yellow" {
         if(this.blueTeam.includes(playerId)) return "blue";
         if(this.yellowTeam.includes(playerId)) return "yellow";
 
         throw new Error(`Player ${playerId} is not in any team`);
     }
+
+    getSeats() : Seats {
+        return [ this.blueTeam.slots[0]!.id, this.yellowTeam.slots[0]!.id, this.blueTeam.slots[1]!.id, this.yellowTeam.slots[1]!.id ];
+    } 
 }

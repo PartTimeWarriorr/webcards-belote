@@ -1,5 +1,6 @@
-import { joinedRoom, joinRoom } from "../src/socket";
+import { joinedRoom, joinRoom, startGame } from "../src/socket";
 import { navigate } from "../main";
+import { GameConfig } from "@shared/types";
 
 export function renderHome() {
     const app = document.getElementById("app")!;
@@ -32,5 +33,9 @@ export function renderHome() {
 
     joinYellowBtn?.addEventListener('click', () => {
         joinRoom("Game_1", "yellow");
+    });
+
+    startGame((gameConfig: GameConfig) => {
+        console.log(gameConfig);
     });
 }

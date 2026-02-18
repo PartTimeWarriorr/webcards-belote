@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { Player } from "./player";
-import { Suit, Rank, BoardState, CardRaw, PlayerRaw } from "@shared/types";
+import { Suit, Rank, BoardState, CardRaw, PlayerRaw, GameConfig } from "@shared/types";
 import { dealCards } from "./game";
 import { Card } from "./card";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
@@ -45,7 +45,6 @@ export function setupSocket(server: any) {
         console.log(`User id: ${socket.id}`);
 
         socket.emit("welcome", socket.id);
-
         players.set(socket.id, new Player(socket.id));
 
         socket.emit("joinTeam", "green");
@@ -64,7 +63,7 @@ export function setupSocket(server: any) {
             turn: socket.id,
             playedCards: serializeMap(playedCards)
         };
-        io.emit("updateBoard", boardState);
+        // io.emit("updateBoard", boardState);
         // console.log(boardState);
 
         // if (players.size === 4) {
@@ -92,22 +91,44 @@ export function setupSocket(server: any) {
             room.join(player, teamPref as "blue" | "yellow", socket);
             socket.emit("joinedRoom", payload);
 
-            console.log(room);
+            // TODO: Add players starting game
+            if (room.isFull()) {
+                const playersRaw = Array.from(players.values(), (p) => p.toRaw(room));
+                const boardState : BoardState = {
+                    players: playersRaw,
+                    turn: socket.id,
+                    playedCards: serializeMap(playedCards)
+                }
+                // const teams = new Record
+                const playerIds = Array.from(players.keys());
+                const teams = playerIds.reduce((acc, key) => {
+                    acc[key] = room.getPlayerTeam(key);
+                    return acc;
+                }, {} as Record<string, string>) 
+                const gameConfig : GameConfig = {
+                    playerId: socket.id,
+                    seats: room.getSeats(),
+                    teams: teams
+                };
+                io.to(room.name).emit("startGame", gameConfig);
+                io.to(room.name).emit("updateBoard", boardState);
+            }
+
         });
 
-        socket.on("playCard", (card) => {
-            console.log(card);
-            players.get(socket.id)?.hand.filter((c) => c.rank !== card.rank || c.suit !== card.suit);
-            playedCards.set(socket.id, card);
-            const playersRaw = Array.from(players.values(), (p) => p.toRaw(room));
-            const boardState : BoardState = {
-                players: playersRaw,
-                turn: socket.id,
-                playedCards: serializeMap(playedCards)
-            };
-            // console.log(boardState);
-            socket.broadcast.emit("updateBoard", boardState);
-        });
+        // socket.on("playCard", (card) => {
+        //     console.log(card);
+        //     players.get(socket.id)?.hand.filter((c) => c.rank !== card.rank || c.suit !== card.suit);
+        //     playedCards.set(socket.id, card);
+        //     const playersRaw = Array.from(players.values(), (p) => p.toRaw(room));
+        //     const boardState : BoardState = {
+        //         players: playersRaw,
+        //         turn: socket.id,
+        //         playedCards: serializeMap(playedCards)
+        //     };
+        //     // console.log(boardState);
+        //     socket.broadcast.emit("updateBoard", boardState);
+        // });
 
         socket.on("disconnect", () => {
             console.log(`A user disconnected: ${socket}`);
