@@ -1,12 +1,19 @@
 import Konva from "konva";
 import { Board } from "../src/board";
 import { joinTeam, startGame, updateBoard, welcome } from "../src/socket";
-import { BoardState, GameConfig } from "@shared/types";
+import { BoardState, GameConfig, Seats } from "@shared/types";
 
 let playerId : string | null = null;
 let playerTeam : string | null = null;
 let allyId : string | null = null;
 let allyCardCount : number = 0;
+
+let south : string | null = null;
+let west : string | null = null;
+let north : string | null = null;
+let east : string | null = null;
+
+let teams;
 
 export function renderGame() {
 
@@ -42,6 +49,23 @@ export function renderGame() {
         playerTeam = team;
     });
 
+    startGame((gameConfig: GameConfig) => {
+        playerId = gameConfig.playerId;
+        allyId = gameConfig.allyId;
+        const rotated = rotateSeats(gameConfig.seats);
+        let south = rotated[0];
+        let west = rotated[1];
+        let north = rotated[2];
+        let east = rotated[3];
+
+        teams = gameConfig.teams; 
+    });
+
+    updateBoard((boardState: BoardState) => {
+        board.hand = boardState.hand;
+        
+    });
+
     // startGame((boardState: BoardState) => {
     //     boardState.players.forEach((p) => {
     //         if (p.id === playerId) {
@@ -58,7 +82,7 @@ export function renderGame() {
     //     board.visualizeOpps(8, 8);
     // });
 
-    updateBoard((boardState: BoardState) => {
+    // updateBoard((boardState: BoardState) => {
         // boardState.players.forEach((p) => {
         //     if (p.id === playerId) {
         //         board.hand = p.hand;
@@ -74,5 +98,13 @@ export function renderGame() {
         // board.visualizeAlly(allyCardCount);
         // board.visualizeOpps(8, 8);
         // board.visualizePlayField(boardState, playerId, allyId);
-    });
+    // });
+}
+
+
+
+function rotateSeats(seats: Seats) {
+    // Rotate the player positions so player is at south
+    const playerIndex = seats.findIndex( id => id === playerId);
+    return [...seats.slice(playerIndex), ...seats.slice(0, playerIndex)];
 }

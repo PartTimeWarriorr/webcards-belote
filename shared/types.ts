@@ -29,9 +29,10 @@ export interface PlayerRaw {
 }
 
 export interface BoardState {
-    players: Array<PlayerRaw>,
+    hand: Array<CardRaw>;
+    cardCounts: Record<string, number>;
     turn: string,
-    playedCards: [string, CardRaw][]
+    playedCards: Record<string, CardRaw>;
 }
 
 export interface JoinRoomPayload {
@@ -41,6 +42,7 @@ export interface JoinRoomPayload {
 
 export interface GameConfig {
     playerId: string,
+    allyId: string,
     seats: Seats,
     teams: Record<string, string>
 }
