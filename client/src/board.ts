@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { BoardState, CardRaw } from "../../shared/types.js";
+import { BoardState, CardRaw, Seats } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
@@ -13,10 +13,19 @@ const SPACE = 150;
 const SPACE_VERTICAL = 50;
 const PLAYFIELD_SCALE = 4;
 
-const SOUTH : Vector2d = { x: 900, y: 525 };
-const NORTH : Vector2d = { x: 900, y: 200 };
-const WEST : Vector2d = { x: 700, y: 400 };
-const EAST : Vector2d = { x: 1100, y: 400 };
+// Playfield
+const SOUTH: Vector2d = { x: 900, y: 525 };
+const WEST: Vector2d = { x: 700, y: 400 };
+const NORTH: Vector2d = { x: 900, y: 200 };
+const EAST: Vector2d = { x: 1100, y: 400 };
+
+const SEAT_POSITIONS: { [index: number]: { pos: Vector2d; rotation: number } } =
+    {
+        0: { pos: { x: 350, y: 0 }, rotation: 0 },
+        1: { pos: { x: 200, y: window.innerHeight / 2 - 300 }, rotation: 90 },
+        2: { pos: { x: 350, y: 0 }, rotation: 0 },
+        3: { pos: { x: 1800, y: window.innerHeight / 2 - 300 }, rotation: 90 },
+    };
 
 export class Board {
     layer: Konva.Layer;
@@ -25,14 +34,12 @@ export class Board {
 
     hand: Array<CardRaw> = new Array();
     cardCounts: Record<string, number> = {};
-    turn: string = "";
 
     constructor(
         layer: Konva.Layer,
         dragLayer: Konva.Layer,
         stage: Konva.Stage,
     ) {
-
         this.layer = layer;
         this.dragLayer = dragLayer;
         this.stage = stage;
@@ -55,13 +62,69 @@ export class Board {
         this.layer.add(field);
     }
 
+    async render(boardState: BoardState, seats: Seats) {
+        this.clearAllCards();
+        this.renderHands(boardState, seats);
+    }
+
+    async renderHands(boardState: BoardState, seats: Seats) {
+        for (let seatIndex = 0; seatIndex < seats.length; ++seatIndex) {
+            const playerId = seats[seatIndex];
+            const seatInfo = SEAT_POSITIONS[seatIndex];
+
+            // If at player seat (always first)
+            if (seatIndex === 0) {
+                await this.renderPlayerHand(boardState.hand, seatInfo.pos);
+            } else {
+                const cardCount = boardState.cardCounts[playerId] ?? 8;
+                await this.renderOtherHand(
+                    cardCount,
+                    seatInfo.pos,
+                    seatInfo.rotation,
+                );
+            }
+        }
+    }
+
+    async renderPlayerHand(hand: Array<CardRaw>, initPos: Vector2d) {
+        for (const [index, card] of hand.entries()) {
+            const cardObject: CardObject = await this.getCardObject(
+                card,
+                initPos,
+            );
+
+            const v: Vector2d = {
+                x: initPos.x + SPACE * index,
+                y: window.innerHeight - cardObject.getHeight(),
+            };
+            cardObject.setPosition(v);
+
+            this.layer.add(cardObject);
+        }
+    }
+
+    async renderOtherHand(
+        numCards: number,
+        initPos: Vector2d,
+        rotation: number,
+    ) {
+        for (let i = 0; i < numCards; ++i) {
+            const offsetX = rotation === 0 ? SPACE * i : 0;
+            const offsetY = rotation === 90 ? SPACE_VERTICAL * i : 0;
+
+            const position = { x: initPos.x + offsetX, y: initPos.y + offsetY };
+            const cardObject = await this.getCardBackObject(position, rotation);
+
+            this.layer.add(cardObject);
+        }
+    }
     clearAllCards() {
         const children = [...this.layer.children];
         children.forEach((c) => {
             if (c.className === "Image") {
                 c.destroy();
             }
-        })
+        });
     }
 
     async getCardBackObject(
@@ -88,7 +151,10 @@ export class Board {
         });
     }
 
-    async getCardObject(card: CardRaw, position: Vector2d): Promise<CardObject> {
+    async getCardObject(
+        card: CardRaw,
+        position: Vector2d,
+    ): Promise<CardObject> {
         return new Promise((resolve) => {
             const image = new Image();
             image.src = getCardImagePath(card.suit, card.rank);
@@ -132,7 +198,9 @@ export class Board {
                     // if (shape != null) {
                     //     name = shape.getAttr("name") ?? name;
                     // }
-                    const name = this.layer.getIntersection(position)?.getAttr("name") ?? "";
+                    const name =
+                        this.layer.getIntersection(position)?.getAttr("name") ??
+                        "";
 
                     const startPosition: Vector2d = {
                         x: konvaObj.dragStartX,
@@ -151,70 +219,11 @@ export class Board {
         });
     }
 
-    async visualizePlayerHand() {
-        console.log("Visualizing hand");
-        let cards = this.hand;
-
-        let initPosition: Vector2d = { x: 350, y: 1 };
-        for (let [index, card] of cards.entries()) {
-            let cardObject: CardObject = await this.getCardObject(
-                card,
-                initPosition,
-            );
-
-            let v: Vector2d = {
-                x: initPosition.x + SPACE * index,
-                y: window.innerHeight - cardObject.getHeight(),
-            };
-            cardObject.setPosition(v);
-
-            this.layer.add(cardObject);
-        }
-    }
-
-    async visualizeAlly(numberCards: number) {
-        let initPosition = { x: 350, y: 0 };
-
-        for (let i = 0; i < numberCards; ++i) {
-            let position = { x: initPosition.x + SPACE * i, y: initPosition.y };
-            let cardObject = await this.getCardBackObject(position, 0);
-
-            this.layer.add(cardObject);
-        }
-    }
-
-    async visualizeOpps(numberLeft: number, numberRight: number) {
-        let initPositionLeft = { x: 200, y: window.innerHeight / 2 - 300 };
-        let initPositionRight = { x: 0, y: window.innerHeight / 2 - 300 };
-
-        for (let i = 0; i < numberLeft; ++i) {
-            let position = {
-                x: initPositionLeft.x,
-                y: initPositionLeft.y + SPACE_VERTICAL * i,
-            };
-            let cardObject = await this.getCardBackObject(position, 90);
-
-            this.layer.add(cardObject);
-        }
-
-        for (let i = 0; i < numberRight; ++i) {
-            let position = {
-                x: initPositionRight.x,
-                y: initPositionRight.y + SPACE_VERTICAL * i,
-            };
-            let cardObject = await this.getCardBackObject(position, 90);
-
-            let v: Vector2d = {
-                x: window.innerWidth - cardObject.getWidth(),
-                y: position.y,
-            };
-            cardObject.setPosition(v);
-
-            this.layer.add(cardObject);
-        }
-    }
-
-    async visualizePlayField(boardState: BoardState, playerId: string | null, allyId: string | null) {
+    async visualizePlayField(
+        boardState: BoardState,
+        playerId: string | null,
+        allyId: string | null,
+    ) {
         // const playerHand : CardRaw[] = boardState.players.find(p => p.id === playerId)?.hand ?? [];
         const playedCards = boardState.playedCards;
 

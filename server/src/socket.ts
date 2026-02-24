@@ -29,10 +29,12 @@ export function setupSocket(server: any) {
 
         socket.emit("welcome", socket.id);
         
+        players.set(socket.id, new Player(socket.id));
         const joined = room.join(players.get(socket.id)!, "blue");
         if (joined) socket.join(room.name); 
 
         if (room.isFull()) {
+            console.log("Room is now full");
             const playerIds = room.getAllPlayerIds();
             const seats = room.getSeats();
             const teams = playerIds.reduce((acc, pid) => {
@@ -70,6 +72,10 @@ export function setupSocket(server: any) {
                 );
             });
         }
+
+        socket.on("playCard", (card) => {
+            console.log(`Player ${socket.id}, played ${card.rank} of ${card.suit}`);
+        });
 
         socket.on("disconnect", () => {
             console.log(`A user disconnected: ${socket}`);
