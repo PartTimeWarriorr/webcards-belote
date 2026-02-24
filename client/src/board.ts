@@ -24,6 +24,8 @@ export class Board {
     stage: Konva.Stage;
 
     hand: Array<CardRaw> = new Array();
+    cardCounts: Record<string, number> = {};
+    turn: string = "";
 
     constructor(
         layer: Konva.Layer,
@@ -228,11 +230,18 @@ export class Board {
         //     this.layer.add(north);
         // }
 
-        for (const [pid, card] of playedCards) {
-            if (pid === allyId) {
-                let north = await this.getCardObject(card, NORTH);
-                this.layer.add(north);
-            }
-        }
+        // for (const [pid, card] of playedCards) {
+        //     if (pid === allyId) {
+        //         let north = await this.getCardObject(card, NORTH);
+        //         this.layer.add(north);
+        //     }
+        // }
+
+        // Object.entries(playedCards).forEach(([pid, card]) => {
+        //     if (pid === allyId) {
+        //         let north = await this.getCardObject(card, NORTH);
+        //         this.layer.add(north);
+        //     }
+        // })
     }
 }

@@ -42,9 +42,10 @@ export interface JoinRoomPayload {
 
 export interface GameConfig {
     playerId: string,
-    allyId: string,
     seats: Seats,
     teams: Record<string, string>
 }
 
 export type Seats = [string, string, string, string];
+
+export type PlayerId = string;

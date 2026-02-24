@@ -1,6 +1,6 @@
-import { Player } from "./player";
+import { PlayerId } from "@shared/types";
 
-type PlayerSlot = Player | null;
+type PlayerSlot = PlayerId | null;
 
 export class Team {
     slots: [PlayerSlot, PlayerSlot] = [null, null];
@@ -9,27 +9,27 @@ export class Team {
         return this.slots.every(s => s !== null);
     }
 
-    join(player: Player) : boolean {
+    join(id: PlayerId) : boolean {
         if (this.isFull()) {
             return false;
         }
 
         const emptyIndex = this.slots.findIndex(i => i === null);
-        this.slots[emptyIndex] = player;
+        this.slots[emptyIndex] = id;
         return true;
     }
 
-    leave(player: Player) : boolean {
-        const playerIndex = this.slots.findIndex(i => i === player);
+    leave(id: PlayerId) : boolean {
+        const playerIndex = this.slots.findIndex(i => i === id);
         if (playerIndex === -1) {
-            throw new Error(`Player ${player.id} is not in this team`);
+            throw new Error(`Player ${id} is not in this team`);
         }
 
         this.slots[playerIndex] = null;
         return true;
     }
 
-    includes(playerId: string) : Team | null {
-        return this.slots.some(p => p?.id === playerId) ? this : null;
+    includes(pid: string) : Team | null {
+        return this.slots.some(id => id === pid) ? this : null;
     }
 }

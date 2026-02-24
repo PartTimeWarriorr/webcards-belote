@@ -1,7 +1,6 @@
-import { Socket } from "socket.io";
 import { Player } from "./player";
 import { Team } from "./team";
-import { Seats } from "@shared/types";
+import { PlayerId, Seats } from "@shared/types";
 
 const TEAM_NAMES : string[] = ["blue", "yellow"]
 
@@ -13,35 +12,45 @@ export class Room {
     name: string;
     blueTeam: Team = new Team();
     yellowTeam: Team = new Team();
+    players: Map<string, Player> = new Map();
 
     constructor(name: string) {
         this.name = name;
     }
 
-    join(player: Player, teamPref: "blue" | "yellow", socket: Socket) {
-        if (this.blueTeam.isFull() && this.yellowTeam.isFull()) {
+    join(player: Player, teamPref: "blue" | "yellow") : boolean {
+        if (this.isFull()) {
             console.log(`Player ${player.id}: Room ${this.name} is full`);
-            return;
+            return false;
         }
 
-        const teamJoined = this.joinTeam(player, teamPref);
-        if (!teamJoined) return;
+        const teamJoined = this.joinTeam(player.id, teamPref);
+        if (!teamJoined) return false;
 
+        this.players.set(player.id, player);
         console.log(`Player ${player.id} joined room ${this.name}`);
-
-        socket.join(this.name);
+        return true;
     }
 
-    private joinTeam(player: Player, teamPref: "blue" | "yellow") : boolean {
+    leave(pid: PlayerId) {
+        if (this.players.delete(pid)) {
+            console.log(`Player ${pid} has left room ${this.name}`);
+        }
+        else {
+            throw new Error("No such player in room");
+        }
+    }
+
+    private joinTeam(pid: PlayerId, teamPref: "blue" | "yellow") : boolean {
         if (!isTeamName(teamPref)) {
             throw new Error("No such team");
         }
 
         const { team, altTeam } = this.getTeams(teamPref);
-        const joined = team.join(player) || altTeam.join(player);
+        const joined = team.join(pid) || altTeam.join(pid);
 
         if (!joined) {
-            console.log(`Player ${player.id} could not join any team`);
+            console.log(`Player ${pid} could not join any team`);
         }
 
         return joined;
@@ -60,7 +69,7 @@ export class Room {
         return this.blueTeam.isFull() && this.yellowTeam.isFull();
     }
 
-    getPlayerTeam(playerId: string) : "blue" | "yellow" {
+    getPlayerTeam(playerId: PlayerId) : "blue" | "yellow" {
         if(this.blueTeam.includes(playerId)) return "blue";
         if(this.yellowTeam.includes(playerId)) return "yellow";
 
@@ -68,6 +77,10 @@ export class Room {
     }
 
     getSeats() : Seats {
-        return [ this.blueTeam.slots[0]!.id, this.yellowTeam.slots[0]!.id, this.blueTeam.slots[1]!.id, this.yellowTeam.slots[1]!.id ];
+        return [ this.blueTeam.slots[0]!, this.yellowTeam.slots[0]!, this.blueTeam.slots[1]!, this.yellowTeam.slots[1]! ];
     } 
+
+    getAllPlayerIds() : Array<PlayerId> {
+        return Array.from(this.players.keys());
+    }
 }

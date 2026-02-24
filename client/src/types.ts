@@ -1,3 +1,4 @@
+import { GameConfig } from '@shared/types';
 import type Konva from 'konva';
 
 export interface CardObject extends Konva.Image {
@@ -5,4 +6,8 @@ export interface CardObject extends Konva.Image {
     dragStartY: number;
     suit: string;
     rank: string;
+}
+
+export type LocalGameConfig = GameConfig & {
+    allyId: string
 }
