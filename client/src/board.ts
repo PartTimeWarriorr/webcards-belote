@@ -3,11 +3,9 @@ import { BoardState, CardRaw, PlayerId, Seats } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
-import { getCardImagePath } from "./utils.js";
-import { playCard, socket } from "./socket.js";
+import { playCard } from "./socket.js";
 import { CardBuilder } from "./card-builder.js";
 
-const cardBack = "/cards/1B.svg";
 const IMAGE_SCALE = 2;
 const INIT_POSITION: Vector2d = { x: 0, y: 0 };
 const SPACE = 150;
@@ -108,9 +106,25 @@ export class Board {
 
     async renderPlayerHand(hand: Array<CardRaw>, initPos: Vector2d) {
         for (const [index, card] of hand.entries()) {
-            const cardObject: CardObject = await this.getCardObject(
+            const cardObject: CardObject = await this.builder.buildFrontCard(
                 card,
                 initPos,
+                {
+                    draggable: true,
+                    dragOptions: {
+                        stage: this.stage,
+                        dragLayer: this.dragLayer,
+                        isValidDrop: (pos) => {
+                            const shape = this.layer.getIntersection(pos);
+                            return shape?.getAttr("name") === "PlayField";
+                        },
+                        onValidDrop: (card, obj) => {
+                            playCard(card);
+                            obj.draggable(false);
+                            obj.setPosition(SOUTH);
+                        }
+                    }
+                }
             );
 
             const v: Vector2d = {
@@ -133,7 +147,7 @@ export class Board {
             const offsetY = rotation === 90 ? SPACE_VERTICAL * i : 0;
 
             const position = { x: initPos.x + offsetX, y: initPos.y + offsetY };
-            const cardObject = await this.getCardBackObject(position, rotation);
+            const cardObject = await this.builder.buildBackCard(position, rotation);
 
             this.layer.add(cardObject);
         }
@@ -143,7 +157,7 @@ export class Board {
         for (let i = 1; i < seats.length; ++i) {
             const playedCard = boardState.playedCards[seats[i]];
             if (playedCard) {
-                const c = await this.getCardObject(playedCard, getPlayPosition(i));
+                const c = await this.builder.buildFrontCard(playedCard, getPlayPosition(i))
                 this.layer.add(c);
             }
         } 
@@ -157,93 +171,4 @@ export class Board {
             }
         });
     }
-
-    async getCardBackObject(
-        position: Vector2d,
-        rotationDegrees: number,
-    ): Promise<Konva.Image> {
-        return new Promise((resolve) => {
-            const image = new Image();
-            image.src = cardBack;
-
-            image.onload = () => {
-                const konvaObj = new Konva.Image({
-                    x: position.x,
-                    y: position.y,
-                    image: image,
-                    width: image.width / IMAGE_SCALE,
-                    height: image.height / IMAGE_SCALE,
-                    draggable: false,
-                    rotation: rotationDegrees,
-                });
-
-                resolve(konvaObj);
-            };
-        });
-    }
-
-    async getCardObject(
-        card: CardRaw,
-        position: Vector2d,
-    ): Promise<CardObject> {
-        return new Promise((resolve) => {
-            const image = new Image();
-            image.src = getCardImagePath(card.suit, card.rank);
-
-            image.onload = () => {
-                const konvaObj = new Konva.Image({
-                    x: position.x,
-                    y: position.y,
-                    image: image,
-                    width: image.width / IMAGE_SCALE,
-                    height: image.height / IMAGE_SCALE,
-                    draggable: true,
-                    dragStartX: 0,
-                    dragStartY: 0,
-                    suit: card.suit,
-                    rank: card.rank,
-                }) as CardObject;
-
-                konvaObj.on("mouseover", () => {
-                    document.body.style.cursor = "pointer";
-                });
-
-                konvaObj.on("mouseout", () => {
-                    document.body.style.cursor = "default";
-                });
-
-                konvaObj.on("dragstart", () => {
-                    konvaObj.moveTo(this.dragLayer);
-                    konvaObj.dragStartX = konvaObj.x();
-                    konvaObj.dragStartY = konvaObj.y();
-                    console.log(konvaObj.dragStartX, konvaObj.dragStartY);
-                });
-
-                konvaObj.on("dragend", () => {
-                    const position = this.stage.getPointerPosition()!;
-
-                    // TODO: socket.playCard()
-                    const name =
-                        this.layer.getIntersection(position)?.getAttr("name") ??
-                        "";
-
-                    const startPosition: Vector2d = {
-                        x: konvaObj.dragStartX,
-                        y: konvaObj.dragStartY,
-                    };
-
-                    if (name == "PlayField") {
-                        playCard(card);
-                        konvaObj.draggable(false);  
-                        konvaObj.setPosition(SOUTH);
-                    } else {
-                        konvaObj.setPosition(startPosition);
-                    }
-                });
-
-                resolve(konvaObj);
-            };
-        });
-    }
-
 }
