@@ -1,7 +1,7 @@
 import Konva from "konva";
 import { Board } from "../src/board";
-import { joinTeam, startGame, updateBoard, welcome } from "../src/socket";
-import { BoardState, GameConfig, Seats } from "@shared/types";
+import { joinTeam, playedCard, startGame, updateBoard, welcome } from "../src/socket";
+import { BoardState, GameConfig, PlayedCardPayload, Seats } from "@shared/types";
 import { LocalGameConfig } from "@/types";
 
 let config: LocalGameConfig | null = null;

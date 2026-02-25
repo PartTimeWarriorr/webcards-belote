@@ -29,16 +29,21 @@ export interface PlayerRaw {
 }
 
 export interface BoardState {
-    hand: Array<CardRaw>;
-    cardCounts: Record<string, number>;
+    hand?: Array<CardRaw>;
+    cardCounts: Record<PlayerId, number>;
     turn: string,
-    playedCards: Record<string, CardRaw>;
+    playedCards: Record<PlayerId, CardRaw>;
 }
 
 export interface JoinRoomPayload {
     roomName: string,
     teamPref: string
 }
+
+export interface PlayedCardPayload {
+    playerId: PlayerId,
+    card: CardRaw 
+};
 
 export interface GameConfig {
     playerId: string,

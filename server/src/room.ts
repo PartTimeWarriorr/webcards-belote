@@ -1,6 +1,6 @@
 import { Player } from "./player";
 import { Team } from "./team";
-import { PlayerId, Seats } from "@shared/types";
+import { CardRaw, PlayerId, Seats } from "@shared/types";
 
 const TEAM_NAMES : string[] = ["blue", "yellow"]
 
@@ -13,6 +13,8 @@ export class Room {
     blueTeam: Team = new Team();
     yellowTeam: Team = new Team();
     players: Map<string, Player> = new Map();
+    turn: string = "";
+    playedCards: Record<PlayerId, CardRaw> = {};
 
     constructor(name: string) {
         this.name = name;
