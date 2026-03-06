@@ -20,7 +20,7 @@ export enum Rank {
 export interface CardRaw {
     suit: Suit,
     rank: Rank
-}
+};
 
 export interface PlayerRaw {
     id: string,
@@ -32,7 +32,8 @@ export interface BoardState {
     hand?: Array<CardRaw>;
     cardCounts: Record<PlayerId, number>;
     turn: string,
-    playedCards: Record<PlayerId, CardRaw>;
+    // playedCards: Record<PlayerId, CardRaw>;
+    playedCards: Array<Play>;
 }
 
 export interface JoinRoomPayload {
@@ -49,8 +50,15 @@ export interface GameConfig {
     playerId: string,
     seats: Seats,
     teams: Record<string, string>
-}
+};
 
 export type Seats = [string, string, string, string];
 
 export type PlayerId = string;
+
+export enum GameMode {
+    ALL_TRUMP,
+    NO_TRUMP
+};
+
+export type Play = { player: PlayerId; card: CardRaw };

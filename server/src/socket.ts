@@ -9,6 +9,7 @@ import {
     GameConfig,
     Seats,
     PlayerId,
+    Play,
 } from "@shared/types";
 import { dealCards } from "./game";
 import { Card } from "./card";
@@ -81,7 +82,7 @@ export function setupSocket(server: any) {
                     hand: room.players.get(pid)!.hand.map((c) => c.toRaw()),
                     cardCounts: cardCounts,
                     turn: playerIds[0],
-                    playedCards: {},
+                    playedCards: [],
                 });
             });
         }
@@ -104,7 +105,9 @@ export function setupSocket(server: any) {
                     );
                 
                 const pid = socket.id;
-                room.playedCards[pid] = card;
+                // room.playedCards[pid] = card;
+                const play: Play = { player: pid, card: card };
+                room.playedCards.push(play);
                 socket.to(room.name).emit("updateBoard", {
                     cardCounts: cardCounts,
                     turn: "",
