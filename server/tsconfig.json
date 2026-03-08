@@ -7,11 +7,12 @@
         "outDir": "dist", // Compiled JS
         "esModuleInterop": true, // Node import compatibility
         "moduleResolution": "Node",
-        "types": ["node"],
+        "types": ["node", "jest"],
         "baseUrl": ".", // For path aliases
         "paths": {
             "@shared/*": ["../shared/*"] // Shared types
-        }
+        },
+        "sourceMap": true
     },
     "include": ["src"]
 }
