@@ -58,7 +58,8 @@ export type PlayerId = string;
 
 export enum GameMode {
     ALL_TRUMP,
-    NO_TRUMP
+    NO_TRUMP,
+    TRUMP
 };
 
 export type Play = { player: PlayerId; card: CardRaw };
