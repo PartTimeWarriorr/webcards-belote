@@ -27,7 +27,6 @@ export class GameEngine {
     trump?: Suit;
     // players: Map<PlayerId, Player> = new Map();
 
-    // TODO: use composition in room class
     constructor(mode: GameMode, seats: Seats, trump?: Suit) {
         this.mode = mode;
         this.seats = seats;
@@ -135,6 +134,7 @@ export class GameEngine {
                 // Must play higher trump if opponent played trump
                 const highestOppTrump = this.getHighestOppTrump(playerId);
                 if (
+                    highestOppTrump &&
                     this.getCardPower(highestOppTrump) > this.getCardPower(card) &&
                     this.hasHigherSameSuit(playerId, highestOppTrump) 
                 ) 

@@ -19,7 +19,6 @@ describe("Basics", () => {
         const c : CardRaw = { suit: Suit.Hearts, rank: Rank.Queen };
 
         const allHands = Object.values(gameEngine.hands);
-        console.log(allHands);
         const cardExists = allHands.some(hand => 
             hand.some(card => card.suit === c.suit && card.rank === c.rank)
         );
@@ -155,7 +154,7 @@ describe("Can play scenarios", () => {
         expect(gameEngine['canPlay']("P2", diffSuit)).toBe(true);
     });
 
-    test("All trump mode must play higher", () => {
+    test("All trump mode - must play higher", () => {
         const gameEngine = new GameEngine(GameMode.ALL_TRUMP, MOCK_SEATS);
         const playedCard : CardRaw = { suit: Suit.Diamonds, rank: Rank.Queen };
 
@@ -177,7 +176,7 @@ describe("Can play scenarios", () => {
         expect(gameEngine['canPlay']("P2", other)).toBe(false);
     });
 
-    test("All trump mode must play higher 2", () => {
+    test("All trump mode - must play higher 2", () => {
         const gameEngine = new GameEngine(GameMode.ALL_TRUMP, MOCK_SEATS);
         const playedCard : CardRaw = { suit: Suit.Diamonds, rank: Rank.Queen };
         const playedCard2 : CardRaw = { suit: Suit.Clubs, rank: Rank.Queen };
@@ -204,5 +203,65 @@ describe("Can play scenarios", () => {
 
         expect(gameEngine['canPlay']("P4", higherSameSuit)).toBe(true);
         expect(gameEngine['canPlay']("P4", other)).toBe(false);
+    });
+
+    test("Trump mode - must play trump if losing hand", () => {
+        const gameEngine = new GameEngine(GameMode.TRUMP, MOCK_SEATS, Suit.Diamonds);
+        const nonTrump : CardRaw = { suit: Suit.Clubs, rank: Rank.Queen };
+        const trump : CardRaw = { suit: Suit.Diamonds, rank: Rank.Nine };
+
+        gameEngine.playedCards.push(
+            { player: "P1", card: { suit: Suit.Hearts, rank: Rank.Ace }}
+        );
+
+        gameEngine.playedCards.push(
+            { player: "P2", card: { suit: Suit.Hearts, rank: Rank.Eight }}
+        );
+
+        gameEngine.playedCards.push(
+            { player: "P3", card: { suit: Suit.Hearts, rank: Rank.Ten }}
+        );
+
+        gameEngine.turn = "P4";
+        gameEngine.hands["P4"] = [ nonTrump, trump ];
+
+        expect(gameEngine['canPlay']("P4", nonTrump)).toBe(false);
+        expect(gameEngine['canPlay']("P4", trump)).toBe(true);
+    });
+
+    test("Trump mode - must play higher trump than opponent", () => {
+        const gameEngine = new GameEngine(GameMode.TRUMP, MOCK_SEATS, Suit.Diamonds);
+        const higher : CardRaw = { suit: Suit.Diamonds, rank: Rank.Nine };
+        const lower : CardRaw = { suit: Suit.Diamonds, rank: Rank.Queen };
+
+        gameEngine.playedCards.push(
+            { player: "P1", card: { suit: Suit.Diamonds, rank: Rank.Ten } }
+        );
+
+        gameEngine.turn = "P2";
+        gameEngine.hands["P2"] = [ higher, lower ];
+
+        expect(gameEngine['canPlay']("P2", lower)).toBe(false);
+        expect(gameEngine['canPlay']("P2", higher)).toBe(true);
+    });
+
+    test("Trump mode - can play anything if winning hand", () => {
+        const gameEngine = new GameEngine(GameMode.TRUMP, MOCK_SEATS, Suit.Diamonds);
+        const higher : CardRaw = { suit: Suit.Diamonds, rank: Rank.Nine };
+        const lower : CardRaw = { suit: Suit.Diamonds, rank: Rank.Queen };
+
+        gameEngine.playedCards.push(
+            { player: "P1", card: { suit: Suit.Diamonds, rank: Rank.Ten } }
+        );
+
+        gameEngine.playedCards.push(
+            { player: "P2", card: { suit: Suit.Diamonds, rank: Rank.Jack } }
+        );
+
+        gameEngine.turn = "P3";
+        gameEngine.hands["P3"] = [ higher, lower ];
+
+        expect(gameEngine['canPlay']("P3", lower)).toBe(true);
+        expect(gameEngine['canPlay']("P3", higher)).toBe(true);
     });
 });
