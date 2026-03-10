@@ -19,7 +19,9 @@ const NORTH: Vector2d = { x: 900, y: 200 };
 const WEST: Vector2d = { x: 700, y: 400 };
 
 function getPlayPosition(index: number) : Vector2d {
-    if (index === 1) {
+    if (index === 0) {
+        return SOUTH;
+    } else if (index === 1) {
         return EAST;
     } else if (index === 2) {
         return NORTH;
@@ -30,6 +32,7 @@ function getPlayPosition(index: number) : Vector2d {
     }
 }
 
+// TODO
 const SEAT_POSITIONS: { [index: number]: { pos: Vector2d; rotation: number } } =
     {
         0: { pos: { x: 350, y: 0 }, rotation: 0 },
@@ -38,6 +41,7 @@ const SEAT_POSITIONS: { [index: number]: { pos: Vector2d; rotation: number } } =
         3: { pos: { x: 1800, y: window.innerHeight / 2 - 300 }, rotation: 90 },
     };
 
+// TODO: inefficient
 export class Board {
     layer: Konva.Layer;
     dragLayer: Konva.Layer;
@@ -119,9 +123,15 @@ export class Board {
                             return shape?.getAttr("name") === "PlayField";
                         },
                         onValidDrop: (card, obj) => {
-                            playCard(card);
-                            obj.draggable(false);
-                            obj.setPosition(SOUTH);
+                            playCard(card, (success: boolean) => {
+                                if (success) {
+                                    // obj.draggable(false);
+                                    // obj.setPosition(SOUTH);
+                                    obj.destroy();
+                                } else {
+                                    obj.setPosition(obj.dragStart);
+                                }
+                            });
                         }
                     }
                 }
@@ -154,10 +164,10 @@ export class Board {
     }
 
     async renderPlayedCards(boardState: BoardState, seats: Seats) {
-        for (let i = 1; i < seats.length; ++i) {
-            const playedCard = boardState.playedCards[seats[i]];
+        for (let i = 0; i < seats.length; ++i) {
+            const playedCard = boardState.playedCards.find(play => play.player === seats[i]);
             if (playedCard) {
-                const c = await this.builder.buildFrontCard(playedCard, getPlayPosition(i))
+                const c = await this.builder.buildFrontCard(playedCard.card, getPlayPosition(i))
                 this.layer.add(c);
             }
         } 

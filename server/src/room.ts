@@ -1,7 +1,7 @@
 import { GameEngine } from "./game-engine";
 import { Player } from "./player";
 import { Team } from "./team";
-import { CardRaw, GameMode, Play, PlayerId, Seats } from "@shared/types";
+import { GameMode,  PlayerId, Seats } from "@shared/types";
 
 const TEAM_NAMES : string[] = ["blue", "yellow"]
 
@@ -14,11 +14,7 @@ export class Room {
     blueTeam: Team = new Team();
     yellowTeam: Team = new Team();
     players: Map<string, Player> = new Map();
-    turn: string = "";
-    // playedCards: Record<PlayerId, CardRaw> = {};
-    playedCards: Array<Play> = [];
 
-    // gameEngine = new GameEngine(GameMode.ALL_TRUMP);
     gameEngine?: GameEngine;
 
     constructor(name: string) {

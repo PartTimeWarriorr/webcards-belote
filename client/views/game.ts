@@ -46,6 +46,7 @@ export function renderGame() {
     updateBoard((boardState: BoardState) => {
         if (config?.seats !== undefined) {
             board.render(boardState, config?.seats);
+            console.log(boardState);
         } else {
             throw new Error("Rendering board: seats not yet defined");
         }

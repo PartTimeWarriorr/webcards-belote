@@ -32,7 +32,6 @@ export interface BoardState {
     hand?: Array<CardRaw>;
     cardCounts: Record<PlayerId, number>;
     turn: string,
-    // playedCards: Record<PlayerId, CardRaw>;
     playedCards: Array<Play>;
 }
 

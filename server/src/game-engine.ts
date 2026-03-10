@@ -75,7 +75,17 @@ export class GameEngine {
         hand.splice(index, 1);
 
         this.playedCards.push({ player: pid, card: card });
+        this.advanceTurn();
         return true;
+    }
+
+    private advanceTurn() {
+        const turnIndex = this.seats.findIndex(s => s === this.turn);
+        if (turnIndex === this.seats.length - 1) {
+            this.turn = this.seats[0];
+        } else {
+            this.turn = this.seats[turnIndex + 1];
+        }
     }
 
     private canPlay(playerId: PlayerId, card: CardRaw): boolean {
@@ -146,6 +156,19 @@ export class GameEngine {
             default:
                 return false;
         }
+    }
+
+    isTrickOver(): boolean {
+        return this.playedCards.length === 4;
+    }
+
+    finishTrick() {
+        if (this.playedCards.length !== 4) {
+            throw new Error("Not everyone has played");
+        }
+
+        this.turn = this.getTrickWinner();
+        this.playedCards = [];
     }
 
     private getTrickWinner(): PlayerId {
