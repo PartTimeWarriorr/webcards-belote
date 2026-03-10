@@ -32,13 +32,12 @@ function getPlayPosition(index: number) : Vector2d {
     }
 }
 
-// TODO
 const SEAT_POSITIONS: { [index: number]: { pos: Vector2d; rotation: number } } =
     {
         0: { pos: { x: 350, y: 0 }, rotation: 0 },
-        1: { pos: { x: 200, y: window.innerHeight / 2 - 300 }, rotation: 90 },
+        1: { pos: { x: 1800, y: window.innerHeight / 2 - 300 }, rotation: 90 },
         2: { pos: { x: 350, y: 0 }, rotation: 0 },
-        3: { pos: { x: 1800, y: window.innerHeight / 2 - 300 }, rotation: 90 },
+        3: { pos: { x: 200, y: window.innerHeight / 2 - 300 }, rotation: 90 },
     };
 
 // TODO: inefficient
