@@ -8,10 +8,10 @@ export function navigate(pageName: string) {
     render();
 }
 
-function render() {
+async function render() {
     if (currentPage === "home") renderHome();
     if (currentPage === "rooms") renderRooms();
-    if (currentPage === "game") renderGame();
+    if (currentPage === "game") await renderGame();
 }
 
 function renderRooms() {

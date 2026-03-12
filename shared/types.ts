@@ -1,4 +1,3 @@
-
 export enum Suit {
     Hearts = "H",
     Clubs = "C",
@@ -18,47 +17,47 @@ export enum Rank {
 }
 
 export interface CardRaw {
-    suit: Suit,
-    rank: Rank
-};
+    suit: Suit;
+    rank: Rank;
+}
 
 export interface PlayerRaw {
-    id: string,
-    hand: Array<CardRaw>,
-    team?: string
+    id: PlayerId;
+    hand: Array<CardRaw>;
+    team?: string;
 }
 
 export interface BoardState {
     hand?: Array<CardRaw>;
     cardCounts: Record<PlayerId, number>;
-    turn: string,
+    turn: PlayerId;
     playedCards: Array<Play>;
 }
 
 export interface JoinRoomPayload {
-    roomName: string,
-    teamPref: string
+    roomName: string;
+    teamPref: string;
 }
 
-export interface PlayedCardPayload {
-    playerId: PlayerId,
-    card: CardRaw 
-};
+export interface CardPlayedPayload {
+    playerId: PlayerId;
+    card: CardRaw;
+}
 
 export interface GameConfig {
-    playerId: string,
-    seats: Seats,
-    teams: Record<string, string>
-};
+    playerId: PlayerId;
+    seats: Seats;
+    teams: Record<PlayerId, string>;
+}
 
-export type Seats = [string, string, string, string];
+export type Seats = [PlayerId, PlayerId, PlayerId, PlayerId];
 
 export type PlayerId = string;
 
 export enum GameMode {
     ALL_TRUMP,
     NO_TRUMP,
-    TRUMP
-};
+    TRUMP,
+}
 
 export type Play = { player: PlayerId; card: CardRaw };

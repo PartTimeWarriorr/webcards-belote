@@ -1,16 +1,30 @@
 import { CardRaw } from "@shared/types";
 import { Vector2d } from "konva/lib/types";
 import { CardObject, DragOptions } from "./types";
-import { getCardImagePath } from "./utils";
+import { getAllCardPaths, getCardImagePath } from "./utils";
 import Konva from "konva";
 
 const CARD_BACK = "/cards/1B.svg";
 
 export class CardBuilder {
     imageScale: number;
+    images: Map<string, HTMLImageElement> = new Map();
+    ready: Promise<void>;
 
     constructor(imageScale: number) {
         this.imageScale = imageScale;
+        this.ready = this.preloadAll();
+    }
+
+    private async preloadAll() {
+        const cardPaths = getAllCardPaths();
+
+        await Promise.all(
+            cardPaths.map(async path => {
+                const image = await this.loadImage(path);
+                this.images.set(path, image);
+            })
+        );
     }
 
     async buildFrontCard(
@@ -22,9 +36,11 @@ export class CardBuilder {
             dragOptions: DragOptions;
         },
     ): Promise<CardObject> {
-        const image = await this.loadImage(
-            getCardImagePath(card.suit, card.rank),
-        );
+        // const image = await this.loadImage(
+        //     getCardImagePath(card.suit, card.rank),
+        // );
+        const image = this.images.get(getCardImagePath(card.suit, card.rank));
+        if (!image) throw new Error("Card image not found");
 
         const obj = new Konva.Image({
             x: position.x,
@@ -39,6 +55,8 @@ export class CardBuilder {
             rank: card.rank,
         }) as CardObject;
 
+        obj.id(`${card.rank}${card.suit}`);
+
         if (obj.draggable() && options?.dragOptions) {
             this.attachDragEvents(card, obj, options?.dragOptions);
         }
@@ -50,7 +68,9 @@ export class CardBuilder {
         position: Vector2d,
         rotation: number,
     ): Promise<Konva.Image> {
-        const image = await this.loadImage(CARD_BACK);
+        // const image = await this.loadImage(CARD_BACK);
+        const image = this.images.get(CARD_BACK);
+        if (!image) throw new Error("Card image not found");
 
         const obj = new Konva.Image({
             x: position.x,
@@ -61,6 +81,8 @@ export class CardBuilder {
             draggable: false,
             rotation: rotation,
         });
+
+        obj.id("back");
 
         return obj;
     }

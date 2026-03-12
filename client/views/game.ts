@@ -1,12 +1,12 @@
 import Konva from "konva";
-import { Board } from "../src/board";
-import { joinTeam, playedCard, startGame, updateBoard, welcome } from "../src/socket";
-import { BoardState, GameConfig, PlayedCardPayload, Seats } from "@shared/types";
+import { Board } from "../src/board-new";
+import { cardPlayed, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
+import { BoardState, CardPlayedPayload, GameConfig, Seats } from "@shared/types";
 import { LocalGameConfig } from "@/types";
 
 let config: LocalGameConfig | null = null;
 
-export function renderGame() {
+export async function renderGame() {
     // !SCALE FOR DEMO
     // const GAME_WIDTH = 1920;
     // const GAME_HEIGHT = 1080;
@@ -29,7 +29,7 @@ export function renderGame() {
     const layer = new Konva.Layer();
     const dragLayer = new Konva.Layer();
 
-    let board = new Board(layer, dragLayer, stage);
+    let board = await Board.init(layer, dragLayer, stage);
 
     startGame((gameConfig: GameConfig) => {
         const rotated = rotateSeats(gameConfig.seats, gameConfig.playerId);
@@ -40,16 +40,25 @@ export function renderGame() {
             seats: rotated as Seats,
             teams: gameConfig.teams,
         };
+        board.seats = config.seats;
         console.log(config);
     });
 
     updateBoard((boardState: BoardState) => {
-        if (config?.seats !== undefined) {
-            board.render(boardState, config?.seats);
+        if (board?.seats !== undefined) {
+            // board.render(boardState, config?.seats);
+            // board.load(boardState, config.seats);
+            board.load(boardState);
             console.log(boardState);
         } else {
             throw new Error("Rendering board: seats not yet defined");
         }
+    });
+
+    cardPlayed((payload: CardPlayedPayload) => {
+        console.log(payload);
+        board.onCardPlayed(payload);
+        board.removeCardBack(payload);
     });
 }
 

@@ -85,23 +85,21 @@ export function setupSocket(server: any) {
                 }
 
                 const cardCounts = mapHandLengths(room.gameEngine.hands);
-                socket.to(room.name).emit("updateBoard", {
-                    cardCounts: cardCounts,
-                    turn: room.gameEngine.turn,
-                    playedCards: room.gameEngine.playedCards
-                });
-                io.to(socket.id).emit("updateBoard", {
-                    hand: room.gameEngine.hands[socket.id],
-                    cardCounts: cardCounts,
-                    turn: room.gameEngine.turn,
-                    playedCards: room.gameEngine.playedCards
-                });
-                // io.to(room.name).emit("updateBoard", {
+                // socket.to(room.name).emit("updateBoard", {
+                //     cardCounts: cardCounts,
+                //     turn: room.gameEngine.turn,
+                //     playedCards: room.gameEngine.playedCards
+                // });
+                // io.to(socket.id).emit("updateBoard", {
                 //     hand: room.gameEngine.hands[socket.id],
                 //     cardCounts: cardCounts,
                 //     turn: room.gameEngine.turn,
                 //     playedCards: room.gameEngine.playedCards
                 // });
+                socket.to(room.name).emit("cardPlayed", {
+                    playerId: socket.id,
+                    card
+                });
 
                 if (room.gameEngine.isTrickOver()) {
                     setTimeout(() => {
@@ -110,11 +108,6 @@ export function setupSocket(server: any) {
                         room.gameEngine.finishTrick();
                         const cardCounts = mapHandLengths(room.gameEngine.hands);
 
-                        // socket.to(room.name).emit("updateBoard", {
-                        //     cardCounts: cardCounts,
-                        //     turn: room.gameEngine.turn,
-                        //     playedCards: room.gameEngine.playedCards
-                        // });
                         const playerIds = room.getAllPlayerIds();
                         playerIds.forEach((pid) => {
                             io.to(pid).emit("updateBoard", {
