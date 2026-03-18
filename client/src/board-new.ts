@@ -32,6 +32,8 @@ const SEATS: Record<number, { position: Vector2d; rotation: number }> = {
     3: { position: { x: 200, y: window.innerHeight / 2 - 300 }, rotation: 90 },
 };
 
+const getCardId = (card: CardRaw) => `${card.rank}${card.suit}`;
+
 export class Board {
     stage: Konva.Stage;
     layer: Konva.Layer;
@@ -44,6 +46,97 @@ export class Board {
     playedCards = new Map<PlayerId, CardObject>();
 
     seats: Seats;
+
+    sync(boardState: BoardState) {}
+
+    applyCardPlayed(payload: CardPlayedPayload) {}
+
+    async syncPlayerHand(hand: CardRaw[]) {
+        const existingNodes = this.playerHandGroup.getChildren();
+        const existingMap = new Map(
+            existingNodes.map(node => [node.id(), node])
+        );
+
+        const newIds = new Set(hand.map(getCardId));
+
+        for (const [id, node] of existingMap) {
+            if (!newIds.has(id)) {
+                node.destroy();
+            }
+        }
+
+        const {position, rotation} = this.getSeat(0);
+        for (const [index, card] of hand.entries()) {
+            const id = getCardId(card);
+            let node = existingMap.get(id);
+
+            if (!node) {
+                node = await this.builder.buildFrontCard(card, { x : 0, y : 0 }, {
+                    draggable: true,
+                    dragOptions: {
+                        stage: this.stage,
+                        dragLayer: this.dragLayer,
+                        isValidDrop: (pos) => {
+                            const shape = this.layer.getIntersection(pos);
+                            return shape?.getAttr("name") === "PlayField";
+                        },
+                        onValidDrop: (card, obj) => {
+                            playCard(card, (success) => {
+                                if (!success) {
+                                    obj.setPosition(obj.dragStart);
+                                }
+                            });
+                        }
+                    }
+                });
+
+                this.playerHandGroup.add(node);
+            }
+
+            node.setPosition({
+                x : position.x + SPACE * index,
+                y: window.innerHeight - node.height()
+            });
+        }
+    }
+
+    async syncOtherHands(cardCounts: Record<PlayerId, number>) {
+        for (const [pid, count] of Object.entries(cardCounts)) {
+            if (pid === this.seats[0]) continue;
+
+            let group = this.otherHandGroups.get(pid);
+            if (!group) {
+                group = new Konva.Group();
+                this.otherHandGroups.set(pid, group);
+                this.layer.add(group);
+            }
+
+            const current = group.getChildren.length;
+            
+            if (current > count) {
+                for (let i = 0; i < current - count; ++i) {
+                    group.getChildren()[group.getChildren().length - 1].destroy();
+                }
+            } else if (current < count) {
+                const seatIndex = this.seats.findIndex(p => p === pid); 
+                const { position, rotation } = this.getSeat(seatIndex);
+
+                for (let i = current; i < count; ++i) {
+                    const node = await this.builder.buildBackCard(position, rotation);
+                    group.add(node);
+                }
+            }
+        }
+    }
+    syncPlayedCards(played: Play[]) {
+        const playedIds = new Set<PlayerId>();
+
+        for (const {player, card} of played) {
+            playedIds.add(player);
+
+            if (this.playedCards.has(player)) continue;
+        }
+    }
 
     private constructor(
         layer: Konva.Layer,
@@ -140,22 +233,27 @@ export class Board {
                         },
                         onValidDrop: (card, obj) => {
                             playCard(card, (success: boolean) => {
-                                if (success) {
-                                    const found = this.playerHandGroup.findOne(
-                                        `${card.rank}${card.suit}`,
-                                    );
-                                    if (!found)
-                                        throw new Error(
-                                            `Card ${obj.id()} not found`,
-                                        );
-
-                                    found.moveTo(this.layer);    
-                                    this.playedCards.set(playerId, obj);
-                                    obj.setPosition(PLAY_POSITIONS[0]);
-                                    this.layer.batchDraw();
-                                } else {
+                                if (!success) {
                                     obj.setPosition(obj.dragStart);
+                                } else {
+                                    obj.setPosition(this.getPlayPosition(0));
                                 }
+                                // if (success) {
+                                //     const found = this.playerHandGroup.findOne(
+                                //         `${card.rank}${card.suit}`,
+                                //     );
+                                //     if (!found)
+                                //         throw new Error(
+                                //             `Card ${obj.id()} not found`,
+                                //         );
+
+                                //     found.moveTo(this.layer);    
+                                //     this.playedCards.set(playerId, obj);
+                                //     obj.setPosition(PLAY_POSITIONS[0]);
+                                //     this.layer.batchDraw();
+                                // } else {
+                                //     obj.setPosition(obj.dragStart);
+                                // }
                             });
                         },
                     },

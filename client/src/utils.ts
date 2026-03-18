@@ -1,4 +1,4 @@
-import { Suit, Rank } from "@shared/types";
+import { Suit, Rank } from "../../shared/types";
 import { CardObject } from "./types";
 
 export function getCardImagePath(suit: Suit, rank: Rank): string {
