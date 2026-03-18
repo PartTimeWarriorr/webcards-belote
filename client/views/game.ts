@@ -1,6 +1,6 @@
 import Konva from "konva";
 import { Board } from "../src/board-new";
-import { cardPlayed, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
+import { cardPlayed, clientReady, initGame, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
 import { BoardState, CardPlayedPayload, GameConfig, Seats } from "@shared/types";
 import { LocalGameConfig } from "@/types";
 
@@ -31,35 +31,31 @@ export async function renderGame() {
 
     let board = await Board.init(layer, dragLayer, stage);
 
-    startGame((gameConfig: GameConfig) => {
+    cardPlayed((payload: CardPlayedPayload) => {
+        console.log(`Received play: ${payload.playerId}, ${payload.card}`);
+        board.onCardPlayed(payload);
+        board.removeCardBack(payload);
+    });
+
+    initGame((gameConfig: GameConfig, boardState: BoardState) => {
+        console.log(`Received config:`);
+        console.log(gameConfig);
+        console.log(`Received board:`);
+        console.log(boardState);
         const rotated = rotateSeats(gameConfig.seats, gameConfig.playerId);
         const allyId = getAllyId(gameConfig.teams, gameConfig.playerId);
         config = {
             playerId: gameConfig.playerId,
             allyId: allyId,
             seats: rotated as Seats,
-            teams: gameConfig.teams,
+            teams: gameConfig.teams
         };
+
         board.seats = config.seats;
-        console.log(config);
+        board.load(boardState);
     });
 
-    updateBoard((boardState: BoardState) => {
-        if (board?.seats !== undefined) {
-            // board.render(boardState, config?.seats);
-            // board.load(boardState, config.seats);
-            board.load(boardState);
-            console.log(boardState);
-        } else {
-            throw new Error("Rendering board: seats not yet defined");
-        }
-    });
-
-    cardPlayed((payload: CardPlayedPayload) => {
-        console.log(payload);
-        board.onCardPlayed(payload);
-        board.removeCardBack(payload);
-    });
+    clientReady();
 }
 
 function rotateSeats(seats: Seats, playerId: string) {

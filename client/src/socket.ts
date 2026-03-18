@@ -39,3 +39,11 @@ export function startGame(callback: (gameConfig: GameConfig) => void) {
 export function cardPlayed(callback: (payload: CardPlayedPayload) => void) {
     socket.on("cardPlayed", callback);
 }
+
+export function initGame(callback: (gameConfig: GameConfig, boardState: BoardState) => void) {
+    socket.on("initGame", callback);
+}
+
+export function clientReady() {
+    socket.emit("clientReady");
+}

@@ -47,95 +47,10 @@ export class Board {
 
     seats: Seats;
 
-    sync(boardState: BoardState) {}
-
-    applyCardPlayed(payload: CardPlayedPayload) {}
-
-    async syncPlayerHand(hand: CardRaw[]) {
-        const existingNodes = this.playerHandGroup.getChildren();
-        const existingMap = new Map(
-            existingNodes.map(node => [node.id(), node])
-        );
-
-        const newIds = new Set(hand.map(getCardId));
-
-        for (const [id, node] of existingMap) {
-            if (!newIds.has(id)) {
-                node.destroy();
-            }
-        }
-
-        const {position, rotation} = this.getSeat(0);
-        for (const [index, card] of hand.entries()) {
-            const id = getCardId(card);
-            let node = existingMap.get(id);
-
-            if (!node) {
-                node = await this.builder.buildFrontCard(card, { x : 0, y : 0 }, {
-                    draggable: true,
-                    dragOptions: {
-                        stage: this.stage,
-                        dragLayer: this.dragLayer,
-                        isValidDrop: (pos) => {
-                            const shape = this.layer.getIntersection(pos);
-                            return shape?.getAttr("name") === "PlayField";
-                        },
-                        onValidDrop: (card, obj) => {
-                            playCard(card, (success) => {
-                                if (!success) {
-                                    obj.setPosition(obj.dragStart);
-                                }
-                            });
-                        }
-                    }
-                });
-
-                this.playerHandGroup.add(node);
-            }
-
-            node.setPosition({
-                x : position.x + SPACE * index,
-                y: window.innerHeight - node.height()
-            });
-        }
-    }
-
-    async syncOtherHands(cardCounts: Record<PlayerId, number>) {
-        for (const [pid, count] of Object.entries(cardCounts)) {
-            if (pid === this.seats[0]) continue;
-
-            let group = this.otherHandGroups.get(pid);
-            if (!group) {
-                group = new Konva.Group();
-                this.otherHandGroups.set(pid, group);
-                this.layer.add(group);
-            }
-
-            const current = group.getChildren.length;
-            
-            if (current > count) {
-                for (let i = 0; i < current - count; ++i) {
-                    group.getChildren()[group.getChildren().length - 1].destroy();
-                }
-            } else if (current < count) {
-                const seatIndex = this.seats.findIndex(p => p === pid); 
-                const { position, rotation } = this.getSeat(seatIndex);
-
-                for (let i = current; i < count; ++i) {
-                    const node = await this.builder.buildBackCard(position, rotation);
-                    group.add(node);
-                }
-            }
-        }
-    }
-    syncPlayedCards(played: Play[]) {
-        const playedIds = new Set<PlayerId>();
-
-        for (const {player, card} of played) {
-            playedIds.add(player);
-
-            if (this.playedCards.has(player)) continue;
-        }
+    async sync(boardState: BoardState) {
+        await this.clearHands();
+        await this.clearPlayed();
+        await this.renderHands(boardState);
     }
 
     private constructor(
@@ -187,8 +102,6 @@ export class Board {
         await this.renderHands(boardState);
     }
 
-    async update(boardState: BoardState) {}
-
     private async renderHands(boardState: BoardState) {
         for (let seatIndex = 0; seatIndex < this.seats.length; ++seatIndex) {
             const playerId = this.seats[seatIndex];
@@ -238,22 +151,6 @@ export class Board {
                                 } else {
                                     obj.setPosition(this.getPlayPosition(0));
                                 }
-                                // if (success) {
-                                //     const found = this.playerHandGroup.findOne(
-                                //         `${card.rank}${card.suit}`,
-                                //     );
-                                //     if (!found)
-                                //         throw new Error(
-                                //             `Card ${obj.id()} not found`,
-                                //         );
-
-                                //     found.moveTo(this.layer);    
-                                //     this.playedCards.set(playerId, obj);
-                                //     obj.setPosition(PLAY_POSITIONS[0]);
-                                //     this.layer.batchDraw();
-                                // } else {
-                                //     obj.setPosition(obj.dragStart);
-                                // }
                             });
                         },
                     },
@@ -266,7 +163,6 @@ export class Board {
             };
             cardObject.setPosition(v);
 
-            this.layer.add(cardObject);
             this.playerHandGroup.add(cardObject);
         }
     }
@@ -287,8 +183,6 @@ export class Board {
                 rotation,
             );
 
-            // this.layer.add(cardObject);
-
             if (!this.otherHandGroups.has(playerId)) {
                 this.otherHandGroups.set(playerId, new Konva.Group());
                 this.layer.add(this.otherHandGroups.get(playerId)!);
@@ -297,71 +191,14 @@ export class Board {
         }
     }
 
-    // async renderPlayedCards(boardState: BoardState) {
-    //     for (let i = 0; i < this.seats.length; ++i) {
-    //         const playedCard = boardState.playedCards.find(play => play.player === this.seats[i]);
-    //         if (playedCard) {
-    //             const c = await this.builder.buildFrontCard(playedCard.card, this.getPlayPosition(i))
-    //             this.layer.add(c);
-    //         }
-    //     }
-    // }
-    // async onCardPlayed(boardState: BoardState) {
-    //     for (let i = 0; i < this.seats.length; ++i) {
-    //         const play = boardState.playedCards.find(
-    //             (play) => play.player === this.seats[i],
-    //         );
-    //         if (play) {
-    //             const cardObject = await this.builder.buildFrontCard(
-    //                 play.card,
-    //                 this.getPlayPosition(i),
-    //             );
-    //             this.layer.add(cardObject);
-    //             this.playedCards.set(play.player, cardObject);
-    //         }
-    //     }
-    // }
-
-    private async updateOtherHands(boardState: BoardState) {
-        const cardCounts = boardState.cardCounts;
-
-        for (const [pid, group] of this.otherHandGroups) {
-            const current = group.children.length;
-            const expected = cardCounts[pid];
-            const diff = current - expected;
-
-            if (diff > 0) {
-                // remove
-                for (let i = 0; i < diff; ++i) {
-                    group.children[group.children.length - 1].destroy();
-                }
-            } else if (diff < 0) {
-                // add
-                const seatIndex = this.seats.findIndex((p) => p === pid);
-                const { position: initPos, rotation } = this.getSeat(seatIndex);
-
-                for (let i = 0; i < Math.abs(diff); ++i) {
-                    const offsetX =
-                        rotation === 0 ? SPACE * group.children.length - 1 : 0;
-                    const offsetY =
-                        rotation === 90
-                            ? SPACE_VERTICAL * group.children.length - 1
-                            : 0;
-
-                    const position = {
-                        x: initPos.x + offsetX,
-                        y: initPos.y + offsetY,
-                    };
-                    const card = await this.builder.buildBackCard(
-                        position,
-                        rotation,
-                    );
-                    group.add(card);
-                }
+    async renderPlayedCards(boardState: BoardState) {
+        for (let i = 0; i < this.seats.length; ++i) {
+            const playedCard = boardState.playedCards.find(play => play.player === this.seats[i]);
+            if (playedCard) {
+                const c = await this.builder.buildFrontCard(playedCard.card, this.getPlayPosition(i))
+                this.layer.add(c);
             }
         }
-
-        this.layer.batchDraw();
     }
 
     removeCardBack(payload: CardPlayedPayload) {
@@ -375,24 +212,24 @@ export class Board {
         const { playerId, card } = payload;
         const seatIndex = this.seats.findIndex(p => p === playerId);
         const position = this.getPlayPosition(seatIndex);
+
         const obj = await this.builder.buildFrontCard(card, position);
+
         this.playedCards.set(playerId, obj);
         this.layer.add(obj);
     }
 
-    // async renderPlayedCards() {
-    //     for (const [playerId, obj] of this.playedCards) {
-    //         const seatIndex = this.seats.findIndex(p => p === playerId);
-    //         const position = PLAY_POSITIONS[seatIndex];
-
-            
-    //     }
-    // }
-
-    async resetPlayed() {
+    private async clearPlayed() {
         this.playedCards.forEach((obj, _) => {
             obj.destroy();
         });
+    }
+
+    private async clearHands() {
+        this.playerHandGroup.destroyChildren();
+        for (const [_, group] of this.otherHandGroups) {
+            group.destroyChildren();
+        }
     }
 
     private getPlayPosition(index: number): Vector2d {

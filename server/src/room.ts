@@ -42,10 +42,17 @@ export class Room {
     leave(pid: PlayerId) {
         if (this.players.delete(pid)) {
             console.log(`Player ${pid} has left room ${this.name}`);
+            const team = this.getPlayerTeam(pid);
+            this.leaveTeam(pid, team);
         }
         else {
             throw new Error("No such player in room");
         }
+    }
+
+    private leaveTeam(pid: PlayerId, teamName: "blue" | "yellow") {
+        const team = this.getTeam(teamName);
+        team.leave(pid);
     }
 
     private joinTeam(pid: PlayerId, teamPref: "blue" | "yellow") : boolean {
@@ -69,6 +76,15 @@ export class Room {
         } else if (teamName === "yellow") {
             return { team: this.yellowTeam, altTeam: this.blueTeam };
         }
+        throw new Error("No such team name");
+    }
+
+    private getTeam(teamName: "blue" | "yellow"): Team {
+        if (teamName === "blue") {
+            return this.blueTeam;
+        } else if (teamName === "yellow") {
+            return this.yellowTeam;
+        } 
         throw new Error("No such team name");
     }
 
