@@ -1,11 +1,14 @@
 import {
     CardRaw,
     GameMode,
+    ModeSelection,
+    Modifier,
     Play,
     PlayerId,
     Rank,
     Seats,
     Suit,
+    SUIT_ORDER,
 } from "@shared/types";
 import {
     ALL_TRUMP_POWER,
@@ -16,32 +19,34 @@ import {
 import { Player } from "./player";
 
 export class GameEngine {
-    deck: CardRaw[] = [];
-    mode: GameMode;
     seats: Seats;
     playedCards: Array<Play>;
+    deck: CardRaw[] = [];
     hands: Record<PlayerId, CardRaw[]>;
     turn: PlayerId = "";
 
-    // TODO
+    mode?: GameMode;
+    modifier?: Modifier;
     trump?: Suit;
-    // players: Map<PlayerId, Player> = new Map();
 
-    constructor(mode: GameMode, seats: Seats, trump?: Suit) {
-        this.mode = mode;
+    modePicks?: Map<PlayerId, ModeSelection>;
+    currMode?: ModeSelection;
+
+    constructor(seats: Seats, trump?: Suit, modifier?: Modifier) {
         this.seats = seats;
         this.playedCards = [];
         this.turn = seats[0];
 
         this.hands = {};
-        this.setup();
-
-        this.trump = trump;
+        this.setupNewRound(trump, modifier);
     }
 
-    private setup() {
+    private setupNewRound(trump?: Suit, modifier?: Modifier) {
+        this.trump = trump;
+        this.modifier = modifier;
+
         this.loadDeck();
-        this.deal();
+        this.dealInitial();
     }
 
     private loadDeck() {
@@ -53,9 +58,39 @@ export class GameEngine {
         this.deck.sort(() => Math.random() - 0.5);
     }
 
+    setMode(selection: ModeSelection) {
+        this.mode = selection.mode;
+        if ("trump" in selection) this.trump = selection.trump;
+        if ("modifier" in selection) this.modifier = selection.modifier;
+    }
+
+    pickMode(pid: PlayerId, pick: ModeSelection): boolean {
+        if (!this.modePicks) this.modePicks = new Map();
+
+        if (!this.currMode || this.compareSelections(this.currMode, pick)) {
+            this.currMode = pick;
+            this.modePicks.set(pid, pick);
+            return true;
+        } 
+
+        return false;
+    }
+
     private deal() {
         this.seats.forEach((pid) => {
             this.hands[pid] = this.deck.splice(0, 8);
+        });
+    }
+
+    private dealInitial() {
+        this.seats.forEach((pid) => {
+            this.hands[pid] = this.deck.splice(0, 5);
+        });
+    }
+
+    private dealFinal() {
+        this.seats.forEach((pid) => {
+            this.hands[pid] = this.hands[pid].concat(this.deck.splice(0, 3));
         });
     }
 
@@ -202,6 +237,8 @@ export class GameEngine {
                 }
             }
         }
+
+        return "";
     }
 
     private isTrumpPlayed(): boolean {
@@ -299,5 +336,23 @@ export class GameEngine {
             default:
                 return 0;
         }
+    }
+
+    private compareSuits(left: Suit, right: Suit) {
+        return SUIT_ORDER.indexOf(left) - SUIT_ORDER.indexOf(right);
+    }
+
+    private compareSelections(left: ModeSelection, right: ModeSelection) {
+        const modeDiff = left.mode - right.mode;
+        if (modeDiff !== 0) return modeDiff;
+
+        if (left.mode === GameMode.TRUMP && right.mode === GameMode.TRUMP) {
+            return this.compareSuits(left.trump, right.trump);
+        }
+
+        const mod_left = "modifier" in left ? left.modifier ?? 1 : 1;
+        const mod_right = "modifier" in right ? right.modifier ?? 1 : 1;
+
+        return mod_left - mod_right;
     }
 }

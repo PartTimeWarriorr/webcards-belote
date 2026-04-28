@@ -21,8 +21,8 @@ export class Room {
         this.name = name;
     }
 
-    startGame(mode: GameMode) {
-        this.gameEngine = new GameEngine(mode, this.getSeats());
+    initGame() {
+        this.gameEngine = new GameEngine(this.getSeats());
     }
 
     join(player: Player, teamPref: "blue" | "yellow") : boolean {

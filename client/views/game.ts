@@ -1,10 +1,19 @@
 import Konva from "konva";
 import { Board } from "../src/board-new";
-import { cardPlayed, clientReady, initGame, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
-import { BoardState, CardPlayedPayload, GameConfig, Seats } from "@shared/types";
+import { cardPlayed, clientReady, finishTrick, initGame, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
+import { BoardState, CardPlayedPayload, GameConfig, GameMode, GameModePayload, Seats, Suit } from "@shared/types";
 import { LocalGameConfig } from "@/types";
 
 let config: LocalGameConfig | null = null;
+
+const payloadMap: Record<string, GameModePayload> = {
+    "clubs": { mode: GameMode.TRUMP, trump: Suit.Clubs },
+    "diamonds": { mode: GameMode.TRUMP, trump: Suit.Diamonds },
+    "heart": { mode: GameMode.TRUMP, trump: Suit.Hearts },
+    "spades": { mode: GameMode.TRUMP, trump: Suit.Spades },
+    "NT" : { mode: GameMode.NO_TRUMP },
+    "AT": { mode: GameMode.ALL_TRUMP }
+};
 
 export async function renderGame() {
     // !SCALE FOR DEMO
@@ -18,7 +27,29 @@ export async function renderGame() {
     // stage.scale({ x: scale, y: scale });
 
     const app = document.getElementById("app")!;
-    app.innerHTML = `<div id="container"></div>`;
+    app.innerHTML = `<div id="container"></div>
+    <div class="gamemode-modal">
+        <div class="mode-btn btn-club" name="clubs"></div> 
+        <div class="mode-btn btn-diamond" name="diamonds"></div> 
+        <div class="mode-btn btn-heart" name="hearts"></div> 
+        <div class="mode-btn btn-spade" name="spades"></div> 
+        <div class="mode-btn" name="NT">NT</div> 
+        <div class="mode-btn" name="AT">AT</div> 
+        <div class="mode-btn" name="x2">x2</div> 
+        <div class="mode-btn" name="x4">x4</div> 
+    </div>
+    `;
+
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const name = btn.getAttribute('name');
+            console.log(name);
+            if (!name) return;
+
+             
+        });
+    });
 
     const stage = new Konva.Stage({
         container: "container",
@@ -53,6 +84,10 @@ export async function renderGame() {
 
         board.seats = config.seats;
         board.load(boardState);
+    });
+
+    finishTrick(() => {
+        board.finishTrick(); 
     });
 
     clientReady();

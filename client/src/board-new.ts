@@ -102,6 +102,10 @@ export class Board {
         await this.renderHands(boardState);
     }
 
+    async finishTrick() {
+        await this.clearPlayed();
+    }
+
     private async renderHands(boardState: BoardState) {
         for (let seatIndex = 0; seatIndex < this.seats.length; ++seatIndex) {
             const playerId = this.seats[seatIndex];
@@ -150,6 +154,7 @@ export class Board {
                                     obj.setPosition(obj.dragStart);
                                 } else {
                                     obj.setPosition(this.getPlayPosition(0));
+                                    this.playedCards.set(playerId, obj);
                                 }
                             });
                         },

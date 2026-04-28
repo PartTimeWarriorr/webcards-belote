@@ -5,6 +5,13 @@ export enum Suit {
     Spades = "S",
 }
 
+export const SUIT_ORDER: Suit[] = [
+    Suit.Clubs,
+    Suit.Diamonds,
+    Suit.Hearts,
+    Suit.Spades,
+];
+
 export enum Rank {
     Ace = "A",
     Seven = "7",
@@ -44,6 +51,11 @@ export interface CardPlayedPayload {
     card: CardRaw;
 }
 
+export interface GameModePayload {
+    mode: GameMode;
+    trump?: Suit;
+}
+
 export interface GameConfig {
     playerId: PlayerId;
     seats: Seats;
@@ -55,9 +67,19 @@ export type Seats = [PlayerId, PlayerId, PlayerId, PlayerId];
 export type PlayerId = string;
 
 export enum GameMode {
-    ALL_TRUMP,
-    NO_TRUMP,
     TRUMP,
+    NO_TRUMP,
+    ALL_TRUMP,
+}
+
+export enum Modifier {
+    X_2 = 2,
+    X_4 = 4,
 }
 
 export type Play = { player: PlayerId; card: CardRaw };
+
+export type ModeSelection =
+    | { mode: GameMode.TRUMP; trump: Suit; modifier?: Modifier}
+    | { mode: GameMode.NO_TRUMP; modifier?: Modifier}
+    | { mode: GameMode.ALL_TRUMP; modifier?: Modifier};

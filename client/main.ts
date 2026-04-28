@@ -15,7 +15,18 @@ async function render() {
 }
 
 function renderRooms() {
-    // app!.innerHTML = `<div id="container">Rooms</div>`
+    const app = document.getElementById("app")!;
+    app.innerHTML = `<div class="gamemode-modal">
+    <div class="mode-btn btn-club" name="clubs"></div> 
+    <div class="mode-btn btn-diamond" name="diamonds"></div> 
+    <div class="mode-btn btn-heart" name="hearts"></div> 
+    <div class="mode-btn btn-spade" name="spades"></div> 
+    <div class="mode-btn" name="NT">NT</div> 
+    <div class="mode-btn" name="AT">AT</div> 
+    <div class="mode-btn" name="x2">x2</div> 
+    <div class="mode-btn" name="x4">x4</div> 
+    </div>`;
+
     // currentPage = "rooms";
 }
 

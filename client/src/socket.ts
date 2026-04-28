@@ -47,3 +47,7 @@ export function initGame(callback: (gameConfig: GameConfig, boardState: BoardSta
 export function clientReady() {
     socket.emit("clientReady");
 }
+
+export function finishTrick(callback: () => void) {
+    socket.on("finishTrick", callback);
+}

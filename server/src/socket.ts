@@ -42,29 +42,41 @@ export function setupSocket(server: any) {
                 {} as Record<string, string>,
             );
 
-            // Choosing mode here
-            room.startGame(GameMode.ALL_TRUMP);
+            room.initGame();
 
-            if (!room.gameEngine) throw new Error("GameEngine didn't start");
-            const cardCounts = mapHandLengths(room.gameEngine.hands);
+            io.to(room.name).emit("startModeSetup");
 
-            playerIds.forEach((pid) => {
-                io.to(pid).emit(
-                    "initGame",
-                    {
-                        playerId: pid,
-                        seats,
-                        teams,
-                    },
-                    {
-                        hand: room.gameEngine?.hands[pid],
-                        cardCounts: cardCounts,
-                        turn: playerIds[0],
-                        playedCards: [],
-                    },
-                );
-            });
+            // if (!room.gameEngine) throw new Error("GameEngine didn't start");
+            // const cardCounts = mapHandLengths(room.gameEngine.hands);
+
+            // playerIds.forEach((pid) => {
+            //     io.to(pid).emit(
+            //         "initGame",
+            //         {
+            //             playerId: pid,
+            //             seats,
+            //             teams,
+            //         },
+            //         {
+            //             hand: room.gameEngine?.hands[pid],
+            //             cardCounts: cardCounts,
+            //             turn: playerIds[0],
+            //             playedCards: [],
+            //         },
+            //     );
+            // });
         });
+
+        socket.on(
+            "pickMode", (mode) => {
+                if (!room.gameEngine) return new Error("GameEngine didn't start");
+
+                const success = room.gameEngine.pickMode(socket.id, mode);
+                if (success) {
+                    console.log("Yay");
+                }
+            }
+        )
 
         socket.on(
             "playCard",

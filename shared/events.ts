@@ -1,10 +1,11 @@
-import { BoardState, CardPlayedPayload, CardRaw, GameConfig, JoinRoomPayload, PlayerId } from "./types";
+import { BoardState, CardPlayedPayload, CardRaw, GameConfig, GameMode, GameModePayload, JoinRoomPayload, PlayerId } from "./types";
 
 export interface ClientToServerEvents {
     playCard: (card: CardRaw, ack: (success: boolean) => void) => void;
     joinRoom: (payload: JoinRoomPayload) => void;
 
     clientReady: () => void;
+    pickMode: (payload: GameModePayload) => void;
     
     // New events
     requestBoard: (playerId: PlayerId) => void;
@@ -17,6 +18,8 @@ export interface ServerToClientEvents {
     joinTeam: (team: string) => void;
     joinedRoom: (payload: JoinRoomPayload) => void;
     startGame: (gameConfig: GameConfig) => void;
+    modePicked: (mode: GameMode) => void;
+    startModeSetup: () => void;
 
     // New events
     setBoard: (boardState: BoardState) => void;
