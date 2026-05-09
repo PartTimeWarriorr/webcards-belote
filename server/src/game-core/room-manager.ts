@@ -1,6 +1,6 @@
 import { Room } from "./room";
 
-class RoomManager {
+export class RoomManager {
     private rooms = new Map<string, Room>;
 
     getRoom(roomName: string) : Room {

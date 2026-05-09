@@ -69,7 +69,10 @@ export function allPassed(state: BiddingState, config: GameConfig): boolean {
     return config.players.every((p) => state.passed.has(p));
 }
 
-export function allButBidderPassed(state: BiddingState, config: GameConfig): boolean {
+export function allButBidderPassed(
+    state: BiddingState,
+    config: GameConfig,
+): boolean {
     if (!state.highestBid?.[0]) return false;
     const index = config.players.indexOf(state.highestBid[0]);
     const others = config.players.slice();
@@ -380,14 +383,18 @@ export function addTrickScores(
     winner: PlayerId,
 ): Scores {
     const trickScore = state.plays.reduce((total, play) => {
-        return total += getCardScore(state, play.card);
+        return (total += getCardScore(state, play.card));
     }, 0);
 
     const trickWinnerId = getTeamId(config, winner);
     return {
-        team1: state.round.roundScores.team1 + ("team1" === trickWinnerId ? trickScore : 0),
-        team2: state.round.roundScores.team2 + ("team2" === trickWinnerId ? trickScore : 0),
-    }
+        team1:
+            state.round.roundScores.team1 +
+            ("team1" === trickWinnerId ? trickScore : 0),
+        team2:
+            state.round.roundScores.team2 +
+            ("team2" === trickWinnerId ? trickScore : 0),
+    };
 }
 
 export function getCardScore(state: GameState, card: Card): number {

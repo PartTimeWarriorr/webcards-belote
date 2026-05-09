@@ -2,7 +2,7 @@ import { GamePhase, GameState, GameConfig, Move, Result } from "./types";
 import { getNextPlayer, shuffle } from "./game-actions";
 import * as handlers from "./game-handlers";
 
-class Game {
+export class Game {
     private state: GameState;
     private config: GameConfig;
 
