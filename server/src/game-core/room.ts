@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { GameConfig, PlayerId, Result, Team, TeamId } from "./types";
+import { FullTeam, GameConfig, GameState, PlayerId, Seats, Team, TeamId } from "./types";
 
 export class Room {
     name: string;
@@ -9,17 +9,22 @@ export class Room {
 
     game?: Game;
 
+    getGameState(): GameState {
+        if (!this.game) throw new Error("No game currently started");
+
+        return this.game.getState();
+    }
+
     constructor(name: string) {
         this.name = name;
     }
 
-    getSeats() {
-        return [this.team1[0] as PlayerId, this.team2[0] as PlayerId, this.team1[1] as PlayerId, this.team2[1] as PlayerId];
-    }
-
     initGame() {
+        if (!this.isReady()) 
+            throw new Error("Room isn't ready");
+
         const config : GameConfig = {
-            players: [this.team1[0] as PlayerId, this.team2[0] as PlayerId, this.team1[1] as PlayerId, this.team2[1] as PlayerId],
+            players: this.orderedSeats(),
             teams: {
                 team1: this.team1,
                 team2: this.team2
@@ -27,6 +32,29 @@ export class Room {
         };
         this.game = new Game(config);
     } 
+
+    isFull() {
+        return this.players.size === 4;
+    }
+
+    isReady(): this is {
+        team1: FullTeam,
+        team2: FullTeam
+    } {
+        return this.team1.every(Boolean) && this.team2.every(Boolean);
+    }
+
+    private orderedSeats() : Seats {
+        if (!this.isReady()) 
+            throw new Error("Room isn't ready");
+
+        return [
+            this.team1[0],
+            this.team2[0],
+            this.team1[1],
+            this.team2[1],
+        ];
+    }
 
     join(player: PlayerId): boolean {
         if (this.isFull()) {
@@ -54,6 +82,7 @@ export class Room {
 
     leaveTeam(player: PlayerId, team: TeamId) {
         const index = this[team].findIndex(i => i === player);
+        if (index === -1) return;
         this[team][index] = null;
     }
 
@@ -73,7 +102,7 @@ export class Room {
             return false;
         }
 
-        const index = this[team].findIndex(i => i !== null);
+        const index = this[team].findIndex(i => i === null);
         this[team][index] = player;
         return true;
     }
@@ -90,9 +119,5 @@ export class Room {
 
     teamFull(team: TeamId): boolean {
         return this[team][0] !== null && this[team][1] !== null;
-    }
-
-    isFull() {
-        return this.players.size === 4;
     }
 }

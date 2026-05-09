@@ -27,7 +27,10 @@ export class Game {
             currentBidder: getNextPlayer(config.players, dealer),
             passed: new Set(),
         };
+    }
 
+    getState() {
+        return this.state;
     }
 
     applyMove(move: Move): Result {

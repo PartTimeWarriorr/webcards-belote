@@ -13,7 +13,7 @@
             "@shared/*": ["../shared/*"] // Shared types
         },
         "sourceMap": true,
-        "ignoreDeprecations": "6.0", // !!
+        // "ignoreDeprecations": "6.0", // !!
         "rootDir": ".."
     },
     "include": ["src"]

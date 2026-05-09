@@ -1,3 +1,4 @@
+import { PlayerId } from "./types";
 import { Room } from "./room";
 
 export class RoomManager {
@@ -7,5 +8,13 @@ export class RoomManager {
         if (!this.rooms.has(roomName)) 
             this.rooms.set(roomName, new Room(roomName));
         return this.rooms.get(roomName)!;
+    }
+
+    findRoomBySocket(pid: PlayerId): Room | undefined {
+        for (const r of this.rooms.values()) {
+            if (r.players.has(pid)) return r;
+        }
+
+        return undefined;
     }
 }
