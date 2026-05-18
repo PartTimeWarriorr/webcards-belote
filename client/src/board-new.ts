@@ -1,17 +1,18 @@
 import Konva from "konva";
 import {
-    BoardState,
-    CardPlayedPayload,
-    CardRaw,
+    Card,
+    GamePhase,
+    Move,
     Play,
     PlayerId,
+    PlayerView,
     Seats,
-} from "../../shared/types.js";
+} from "@shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
-import { playCard } from "./socket.js";
 import { CardBuilder } from "./card-builder.js";
+import { gameMove } from "./socket.js";
 
 const IMAGE_SCALE: number = 2;
 const PLAYFIELD_SCALE = 4;
@@ -32,7 +33,7 @@ const SEATS: Record<number, { position: Vector2d; rotation: number }> = {
     3: { position: { x: 200, y: window.innerHeight / 2 - 300 }, rotation: 90 },
 };
 
-const getCardId = (card: CardRaw) => `${card.rank}${card.suit}`;
+const getCardId = (card: Card) => `${card.rank}${card.suit}`;
 
 export class Board {
     stage: Konva.Stage;
@@ -45,26 +46,49 @@ export class Board {
     otherHandGroups = new Map<PlayerId, Konva.Group>();
     playedCards = new Map<PlayerId, CardObject>();
 
-    seats: Seats;
+    playFieldBounds = {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+    };
 
-    async sync(boardState: BoardState) {
-        await this.clearHands();
-        await this.clearPlayed();
-        await this.renderHands(boardState);
+    async render(seats: Seats, gameView: PlayerView) {
+        switch (gameView.phase) {
+            case GamePhase.Bidding: {
+                await this.clearHands();
+                await this.clearPlayed();
+                await this.renderHands(seats, gameView);
+                console.log(gameView);
+                break;
+            }
+            case GamePhase.Playing: {
+                await this.clearHands();
+                await this.clearPlayed();
+                await this.renderTrick(seats, gameView);
+                await this.renderHands(seats, gameView);
+                break;
+            }
+            case GamePhase.Scoring: {
+                await this.clearHands();
+                await this.clearPlayed();
+                // render some scoreboard
+                console.log(gameView);
+                break;
+            }
+        }
     }
 
     private constructor(
         layer: Konva.Layer,
         dragLayer: Konva.Layer,
         stage: Konva.Stage,
-        seats: Seats,
         builder: CardBuilder,
     ) {
         this.layer = layer;
         this.dragLayer = dragLayer;
         this.stage = stage;
         this.builder = builder;
-        this.seats = seats;
 
         this.layer.add(this.playerHandGroup);
 
@@ -78,12 +102,11 @@ export class Board {
         layer: Konva.Layer,
         dragLayer: Konva.Layer,
         stage: Konva.Stage,
-        seats: Seats = ["","","",""],
     ) {
         const builder = new CardBuilder(IMAGE_SCALE);
         await builder.ready;
 
-        return new Board(layer, dragLayer, stage, seats, builder);
+        return new Board(layer, dragLayer, stage, builder);
     }
 
     private loadPlayField() {
@@ -96,30 +119,29 @@ export class Board {
         }).setAttr("name", "PlayField");
 
         this.layer.add(field);
+        field.moveToBottom();
+        this.playFieldBounds = {
+            x: field.x(),
+            y: field.y(),
+            width: field.width(),
+            height: field.height(),
+        };
     }
 
-    async load(boardState: BoardState) {
-        await this.renderHands(boardState);
-    }
-
-    async finishTrick() {
-        await this.clearPlayed();
-    }
-
-    private async renderHands(boardState: BoardState) {
-        for (let seatIndex = 0; seatIndex < this.seats.length; ++seatIndex) {
-            const playerId = this.seats[seatIndex];
+    private async renderHands(seats: Seats, gameView: PlayerView) {
+        for (let seatIndex = 0; seatIndex < seats.length; ++seatIndex) {
+            const playerId = seats[seatIndex];
             const seatInfo = this.getSeat(seatIndex);
 
             // If at player seat (always first)
             if (seatIndex === 0) {
                 await this.renderPlayerHand(
                     playerId,
-                    boardState.hand ?? [],
+                    gameView.round.hand ?? [],
                     seatInfo.position,
                 );
             } else {
-                const cardCount = boardState.cardCounts[playerId] ?? 8;
+                const cardCount = gameView.round.numCards[playerId] ?? 8;
                 await this.renderOtherHand(
                     playerId,
                     cardCount,
@@ -132,7 +154,7 @@ export class Board {
 
     private async renderPlayerHand(
         playerId: PlayerId,
-        hand: Array<CardRaw>,
+        hand: Array<Card>,
         initPos: Vector2d,
     ) {
         for (const [index, card] of hand.entries()) {
@@ -145,18 +167,22 @@ export class Board {
                         stage: this.stage,
                         dragLayer: this.dragLayer,
                         isValidDrop: (pos) => {
-                            const shape = this.layer.getIntersection(pos);
-                            return shape?.getAttr("name") === "PlayField";
+                            const bounds = this.playFieldBounds;
+                            return (
+                                pos.x >= bounds.x &&
+                                pos.x <= bounds.x + bounds.width &&
+                                pos.y >= bounds.y &&
+                                pos.y <= bounds.y + bounds.height
+                            );
                         },
                         onValidDrop: (card, obj) => {
-                            playCard(card, (success: boolean) => {
-                                if (!success) {
-                                    obj.setPosition(obj.dragStart);
-                                } else {
-                                    obj.setPosition(this.getPlayPosition(0));
-                                    this.playedCards.set(playerId, obj);
-                                }
-                            });
+                            const move: Move = {
+                                type: "PLAY",
+                                player: playerId,
+                                card: card,
+                            };
+                            gameMove(move);
+                            obj.setPosition(obj.dragStart);
                         },
                     },
                 },
@@ -196,32 +222,21 @@ export class Board {
         }
     }
 
-    async renderPlayedCards(boardState: BoardState) {
-        for (let i = 0; i < this.seats.length; ++i) {
-            const playedCard = boardState.playedCards.find(play => play.player === this.seats[i]);
+    async renderTrick(seats: Seats, gameView: PlayerView) {
+        if (gameView.phase !== GamePhase.Playing) return;
+        for (let i = 0; i < seats.length; ++i) {
+            const playedCard = gameView.plays.find(
+                (play) => play.player === seats[i],
+            );
             if (playedCard) {
-                const c = await this.builder.buildFrontCard(playedCard.card, this.getPlayPosition(i))
+                const c = await this.builder.buildFrontCard(
+                    playedCard.card,
+                    this.getPlayPosition(i),
+                );
+                this.playedCards.set(playedCard.player, c);
                 this.layer.add(c);
             }
         }
-    }
-
-    removeCardBack(payload: CardPlayedPayload) {
-        const { playerId } = payload;
-        const oppHand = this.otherHandGroups.get(playerId)?.getChildren();
-        if (!oppHand) throw new Error("No such player found");
-        oppHand[oppHand?.length - 1].destroy();
-    }
-
-    async onCardPlayed(payload: CardPlayedPayload) {
-        const { playerId, card } = payload;
-        const seatIndex = this.seats.findIndex(p => p === playerId);
-        const position = this.getPlayPosition(seatIndex);
-
-        const obj = await this.builder.buildFrontCard(card, position);
-
-        this.playedCards.set(playerId, obj);
-        this.layer.add(obj);
     }
 
     private async clearPlayed() {

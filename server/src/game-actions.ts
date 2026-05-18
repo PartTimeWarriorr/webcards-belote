@@ -12,7 +12,8 @@ import {
     GameMode,
     TeamId,
     Scores,
-} from "./types";
+    Result,
+} from "@shared/types";
 import { ALL_TRUMP_SCORE, NO_TRUMP_SCORE } from "./game-rules";
 
 export function shuffle(): Card[] {
@@ -133,7 +134,7 @@ export function hasHigherSameSuit(
     card: Card,
 ): boolean {
     return state.round.hands[player].some(
-        (c) => compareCardsPower(state, c, card) && c.suit === card.suit,
+        (c) => compareCardsPower(state, c, card) > 0 && c.suit === card.suit,
     );
 }
 
@@ -148,7 +149,7 @@ export function getHighestPlay(state: PlayingState): Play {
 export function getHighestPlayOfSuit(state: PlayingState, suit: Suit): Play {
     const filtered = state.plays.filter((p) => p.card.suit === suit);
     filtered.sort((left, right) =>
-        compareCardsPower(state, left.card, right.card),
+        compareCardsPower(state, right.card, left.card),
     );
     return filtered[0];
 }
@@ -181,12 +182,12 @@ export function canPlay(
     player: PlayerId,
     card: Card,
     config: GameConfig,
-): boolean {
-    if (state.currentPlayer !== player) return false;
-    if (!hasCard(state, player, card)) return false;
+): Result<boolean> {
+    if (state.currentPlayer !== player) return {ok: false, reason: "It's not this player's turn"};
+    if (!hasCard(state, player, card)) return {ok: false, reason: "Player doesn't have this card"};
 
-    if (state.plays.length === 0) return true;
-    if (state.plays.length === 4) return false;
+    if (state.plays.length === 0) return {ok: true, state: true};
+    if (state.plays.length === 4) return {ok: false, reason: "Trick is complete already"};
 
     const { player: trickPlayer, card: trickCard } = state.plays[0];
     const trickSuit = trickCard.suit;
@@ -194,22 +195,22 @@ export function canPlay(
     switch (state.round.mode) {
         case GameMode.ALL_TRUMP: {
             if (hasSuit(state, player, trickSuit) && card.suit !== trickSuit)
-                return false;
+                return {ok: false, reason: "ALL_TRUMP mode: Player has correct suit but not playing it."};
 
             const { card: highest } = getHighestPlay(state);
             if (
-                compareCardsPower(state, highest, card) &&
+                compareCardsPower(state, highest, card) > 0 &&
                 hasHigherSameSuit(state, player, highest)
             )
-                return false;
+                return {ok: false, reason: "ALL_TRUMP mode: Player has higher card of suit, but not playing it."};
 
-            return true;
+            return {ok: true, state: true};
         }
         case GameMode.NO_TRUMP: {
             if (hasSuit(state, player, trickSuit) && card.suit !== trickSuit)
-                return false;
+                return {ok: false, reason: "NO_TRUMP mode: Player has correct suit but not playing it."};
 
-            return true;
+            return {ok: true, state: true};
         }
         case GameMode.TRUMP: {
             if (!state.round.trump) {
@@ -217,7 +218,7 @@ export function canPlay(
             }
 
             if (hasSuit(state, player, trickSuit) && card.suit !== trickSuit)
-                return false;
+                return {ok: false, reason: "TRUMP mode: Player has correct suit but not playing it."};
 
             const trickWinner = getTrickWinner(state);
             if (
@@ -226,24 +227,25 @@ export function canPlay(
                 hasSuit(state, player, state.round.trump) &&
                 card.suit !== state.round.trump
             )
-                return false;
+                return {ok: false, reason: "TRUMP mode: The winner is the opposing team and the player has a trump they can play."}
 
             const highestOppTrump = getHighestOppTrump(config, state, player);
             if (
+                !isSameTeam(config, trickWinner, player) &&
                 highestOppTrump &&
-                compareCardsPower(state, highestOppTrump, card) &&
+                compareCardsPower(state, highestOppTrump, card) > 0 &&
                 hasHigherSameSuit(state, player, highestOppTrump)
             )
-                return false;
+                return {ok: false, reason: "TRUMP mode: Player has higher trump than the opponent but not playing it."};
 
-            return true;
+            return {ok: true, state: true};
         }
         default:
-            return false;
+            return {ok: false, reason: "Default"};
     }
 }
 
-function isSameTeam(
+export function isSameTeam(
     config: GameConfig,
     pid_1: PlayerId,
     pid_2: PlayerId,

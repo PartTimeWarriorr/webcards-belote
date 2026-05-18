@@ -1,4 +1,4 @@
-import { CardRaw } from "@shared/types";
+import { Card } from "@shared/types";
 import { Vector2d } from "konva/lib/types";
 import { CardObject, DragOptions } from "./types";
 import { getAllCardPaths, getCardImagePath } from "./utils";
@@ -28,7 +28,7 @@ export class CardBuilder {
     }
 
     async buildFrontCard(
-        card: CardRaw,
+        card: Card,
         position: Vector2d,
         options?: {
             draggable?: boolean;
@@ -88,7 +88,7 @@ export class CardBuilder {
     }
 
     private attachDragEvents(
-        card: CardRaw,
+        card: Card,
         obj: CardObject,
         options: DragOptions,
     ) {
@@ -101,7 +101,7 @@ export class CardBuilder {
         });
 
         obj.on("dragstart", () => {
-            obj.moveTo(options.dragLayer);
+            obj.moveToTop();
             obj.dragStart = { x: obj.x(), y: obj.y() };
         });
 

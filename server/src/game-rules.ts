@@ -6,7 +6,7 @@ import {
     GameMode,
     Suit,
     Rank,
-} from "./types.js";
+} from "@shared/types";
 
 export const ALL_TRUMP_POWER: Record<Rank, number> = {
     J: 8,

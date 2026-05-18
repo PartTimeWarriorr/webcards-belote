@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "dev": "cd ../client & npm run build & cd ../server & nodemon --exec tsx src/index.ts",
+        "dev": "tsx watch src/index.ts",
         "build": "tsc",
         "start": "node dist/index.js",
         "test": "jest"

@@ -1,41 +1,57 @@
-import { joinedRoom, joinRoom, startGame } from "../src/socket";
+import { roomJoined, roomJoin, startGame } from "../src/socket";
 import { navigate } from "../main";
 import { GameConfig } from "@shared/types";
 
 export function renderHome() {
     const app = document.getElementById("app")!;
 
-    app.innerHTML = `        <div id="joinLobbyModal" class="modal stepper">
-            <div id="joinLobbyTrack" class="stepper-track">
-                <div class="step">
-                    <button id="joinLobbyBtn" class="btn-main btn-slider">Join Lobby</button>
-                </div>
-                <div class="step">
-                    <button id="joinBlueBtn" class="btn-blue">Blue</button>
-                    <button id="joinYellowBtn" class="btn-yellow">Yellow</button>
+    app.innerHTML = `
+            <div id="joinLobbyModal" class="modal stepper">
+                <div id="joinLobbyTrack" class="stepper-track">
+                    <div class="step step-center">
+                        <button id="joinLobbyBtn" class="btn-main">
+                            Join Lobby
+                        </button>
+                    </div>
+                    <div class="step">
+                        <div id="backBtn" class="btn-small">Back</div>
+                        <div class="scroll-box">
+                            <div class="lobby-box">
+                                <div class="lobby-name">Room</div>
+                                <div class="lobby-players">4/4</div>
+                            </div>
+                            <div class="lobby-box">
+                                <div class="lobby-name">Room</div>
+                                <div class="lobby-players">4/4</div>
+                            </div>
+                            <div class="lobby-box">
+                                <div class="lobby-name">Room</div>
+                                <div class="lobby-players">4/4</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>`
+    `;
 
     const stepper = document.getElementById("joinLobbyTrack");
     const joinLobbyBtn = document.getElementById("joinLobbyBtn");
-    
-    joinLobbyBtn?.addEventListener('click', () => {
+    const backBtn = document.getElementById("backBtn");
+
+    joinLobbyBtn?.addEventListener("click", () => {
         stepper?.classList.add("step-2");
     });
 
-    const joinBlueBtn = document.getElementById("joinBlueBtn");
-    const joinYellowBtn = document.getElementById("joinYellowBtn");
-
-    joinBlueBtn?.addEventListener('click', () => {
-        joinRoom("Game_1", "blue");
+    backBtn?.addEventListener("click", () => {
+        stepper?.classList.remove("step-2");
     });
 
-    joinYellowBtn?.addEventListener('click', () => {
-        joinRoom("Game_1", "yellow");
+    const lobbyBoxes = document.querySelectorAll('.lobby-box');
+    lobbyBoxes.forEach((box) => {
+        box.addEventListener('click', async () => {
+            roomJoin("Game_1");  
+            await navigate("game");
+        });
     });
 
-    startGame((gameConfig: GameConfig) => {
-        console.log(gameConfig);
-    });
 }

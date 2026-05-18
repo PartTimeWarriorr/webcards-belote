@@ -1,4 +1,4 @@
-import { CardRaw, GameConfig } from '@shared/types';
+import { Card, GameConfig } from '@shared/types';
 import type Konva from 'konva';
 import { Vector2d } from 'konva/lib/types';
 
@@ -12,9 +12,5 @@ export interface DragOptions {
     stage: Konva.Stage;
     dragLayer: Konva.Layer;
     isValidDrop: (pos: Vector2d) => boolean;
-    onValidDrop: (card: CardRaw, node: CardObject) => void;
-}
-
-export type LocalGameConfig = GameConfig & {
-    allyId: string
+    onValidDrop: (card: Card, node: CardObject) => void;
 }

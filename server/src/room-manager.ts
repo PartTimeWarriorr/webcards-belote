@@ -1,4 +1,4 @@
-import { PlayerId } from "./types";
+import { PlayerId } from "@shared/types";
 import { Room } from "./room";
 
 export class RoomManager {

@@ -1,5 +1,5 @@
-import { GamePhase, GameState, GameConfig, Move, Result } from "./types";
-import { getNextPlayer, shuffle } from "./game-actions";
+import { GamePhase, GameState, GameConfig, Move, Result } from "@shared/types";
+import { dealInitial, getNextPlayer, shuffle } from "./game-actions";
 import * as handlers from "./game-handlers";
 
 export class Game {
@@ -11,7 +11,6 @@ export class Game {
     constructor(config: GameConfig) {
         const dealer =
             config.players[Math.floor(Math.random() * config.players.length)];
-        this.config = config;
         this.state = {
             phase: GamePhase.Bidding,
             round: {
@@ -27,6 +26,16 @@ export class Game {
             currentBidder: getNextPlayer(config.players, dealer),
             passed: new Set(),
         };
+        const [newDeck, newHands] = dealInitial(this.state, config);
+        this.state = {
+            ...this.state,
+            round: {
+                ...this.state.round,
+                deck: newDeck,
+                hands: newHands,
+            },
+        };
+        this.config = config;
     }
 
     getState() {

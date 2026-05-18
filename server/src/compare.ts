@@ -1,5 +1,5 @@
 import { ALL_TRUMP_POWER, NO_TRUMP_POWER } from "./game-rules";
-import { GameMode, Bid, Suit, SUIT_ORDER, GameState, Card } from "./types";
+import { GameMode, Bid, Suit, SUIT_ORDER, GameState, Card } from "@shared/types";
 
 function compareSuits(left: Suit, right: Suit) {
     return SUIT_ORDER.indexOf(left) - SUIT_ORDER.indexOf(right);

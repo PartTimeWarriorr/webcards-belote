@@ -1,4 +1,4 @@
-import { BaseGameState, BiddingState, GamePhase, PlayingState, ScoringState, TrickStatus } from "./types" 
+import { BaseGameState, BiddingState, GamePhase, PlayingState, ScoringState, TrickStatus } from "@shared/types" 
 function createBaseState(): BaseGameState {
     return {
         round: {

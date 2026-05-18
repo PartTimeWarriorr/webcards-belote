@@ -1,13 +1,14 @@
 import {
     BiddingState,
     GameMode,
+    GameState,
     PlayerId,
     PlayingState,
     Result,
     ScoringState,
     TrickStatus,
-} from "./types";
-import { Bid, Card, GameConfig, GamePhase } from "./types";
+} from "@shared/types";
+import { Bid, Card, GameConfig, GamePhase } from "@shared/types";
 import { higherBid } from "./compare";
 import {
     addRoundScores,
@@ -30,7 +31,7 @@ export function handleBid(
     state: BiddingState,
     player: PlayerId,
     bid: Bid,
-): Result {
+): Result<GameState> {
     if (state.phase !== GamePhase.Bidding)
         return {
             ok: false,
@@ -66,7 +67,7 @@ export function handlePass(
     config: GameConfig,
     state: BiddingState,
     player: PlayerId,
-): Result {
+): Result<GameState> {
     if (state.phase !== GamePhase.Bidding)
         return {
             ok: false,
@@ -155,7 +156,7 @@ export function handlePlay(
     state: PlayingState,
     player: PlayerId,
     card: Card,
-): Result {
+): Result<GameState> {
     if (state.phase !== GamePhase.Playing)
         return {
             ok: false,
@@ -168,10 +169,17 @@ export function handlePlay(
         };
     }
 
-    if (!canPlay(state, player, card, config)) {
+    // if (!canPlay(state, player, card, config)) {
+    //     return {
+    //         ok: false,
+    //         reason: `Player ${player} cannot play card: ${card.rank}${card.suit}`,
+    //     };
+    // }
+    const validMove = canPlay(state, player, card, config);
+    if (!validMove.ok) {
         return {
             ok: false,
-            reason: `Player ${player} cannot play card: ${card.rank}${card.suit}`,
+            reason: `Cannot play: ${validMove.reason}`
         };
     }
 
@@ -222,7 +230,7 @@ export function handlePlay(
 export function handleStartNewRound(
     config: GameConfig,
     state: ScoringState,
-): Result {
+): Result<GameState> {
     if (state.phase !== GamePhase.Scoring)
         return {
             ok: false,
@@ -270,7 +278,7 @@ export function handleStartNewRound(
 export function handleResolveTrick(
     config: GameConfig,
     state: PlayingState,
-): Result {
+): Result<GameState> {
     if (state.phase !== GamePhase.Playing)
         return {
             ok: false,

@@ -6,12 +6,14 @@ import {
     GamePhase,
     GameState,
     Modifier,
+    Rank,
     Suit,
     TrickStatus,
-} from "./types";
+} from "@shared/types";
 import { createBiddingState, createPlayingState } from "./state-builders";
 import * as handlers from "./game-handlers";
-import { higherBid } from "./compare";
+import { compareCardsPower, higherBid } from "./compare";
+import { getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit, isSameTeam } from "./game-actions";
 
 const MOCK_CONFIG: GameConfig = {
     players: ["p1", "p2", "p3", "p4"],
@@ -22,7 +24,6 @@ const MOCK_CONFIG: GameConfig = {
 };
 
 describe("Test bid handler", () => {
-
     test("Bid not higher", () => {
         const state = createBiddingState({
             highestBid: ["p1", { mode: GameMode.ALL_TRUMP }],
@@ -31,8 +32,6 @@ describe("Test bid handler", () => {
         const result = handlers.handleBid(MOCK_CONFIG, state, "p2", {
             mode: GameMode.NO_TRUMP,
         });
-
-        console.log(result);
 
         expect(result.ok).toBe(false);
     });
@@ -102,9 +101,9 @@ describe("Test pass handler", () => {
                 dealer: "p4",
                 highestBidder: null,
                 deck: [],
-                hands: {"p1": [], "p2": [], "p3": [], "p4":[]},
-                roundScores: {"team1":6, "team2":7}
-            }
+                hands: { p1: [], p2: [], p3: [], p4: [] },
+                roundScores: { team1: 6, team2: 7 },
+            },
         });
         const result = handlers.handlePass(MOCK_CONFIG, state, "p4");
 
@@ -232,5 +231,135 @@ describe("Test compare bids", () => {
         ],
     ])("Compare test modifier 2", (low, high, expected) => {
         expect(higherBid(low as Bid, high as Bid)).toBe(expected);
+    });
+});
+
+describe("Playtest", () => {
+    test("Playing", () => {
+        const state = createPlayingState({
+            plays: [
+                { player: "p1", card: { rank: Rank.Jack, suit: Suit.Spades } },
+            ],
+            currentPlayer: "p2",
+            round: {
+                deck: [],
+                hands: {
+                    p2: [
+                        { rank: Rank.Queen, suit: Suit.Hearts },
+                        { rank: Rank.Queen, suit: Suit.Spades },
+                        { rank: Rank.Nine, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Clubs },
+                        { rank: Rank.Eight, suit: Suit.Spades },
+                        { rank: Rank.King, suit: Suit.Clubs },
+                        { rank: Rank.Seven, suit: Suit.Diamonds },
+                    ],
+                },
+                dealer: "a",
+                highestBidder: null,
+                roundScores: { team1: 0, team2: 0 },
+                mode: GameMode.ALL_TRUMP,
+            },
+        });
+
+        const card = { rank: Rank.Nine, suit: Suit.Spades };
+        const result = handlers.handlePlay(MOCK_CONFIG, state, "p2", card);
+
+        if (!result.ok) {
+            console.log(result.reason);
+        }
+        expect(result.ok).toBe(true);
+    });
+
+    test("Comparing", () => {
+        const state = createPlayingState({
+            round: {
+                deck: [],
+                hands: {},
+                dealer: "a",
+                highestBidder: null,
+                roundScores: { team1: 0, team2: 0 },
+                mode: GameMode.ALL_TRUMP,
+            },
+        });
+        const lower = { rank: Rank.Nine, suit: Suit.Spades };
+        const higher = { rank: Rank.Jack, suit: Suit.Spades };
+        const result = compareCardsPower(state, higher, lower);
+        console.log(result);
+        expect(result > 0).toBe(true);
+    });
+
+    test("Comparing 2", () => {
+        const state = createPlayingState({
+            plays: [
+                { player: "p1", card: { rank: Rank.Jack, suit: Suit.Spades } },
+            ],
+            currentPlayer: "p2",
+            round: {
+                deck: [],
+                hands: {
+                    p2: [
+                        { rank: Rank.Queen, suit: Suit.Hearts },
+                        { rank: Rank.Queen, suit: Suit.Spades },
+                        { rank: Rank.Nine, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Clubs },
+                        { rank: Rank.Eight, suit: Suit.Spades },
+                        { rank: Rank.King, suit: Suit.Clubs },
+                        { rank: Rank.Seven, suit: Suit.Diamonds },
+                    ],
+                },
+                dealer: "a",
+                highestBidder: null,
+                roundScores: { team1: 0, team2: 0 },
+                mode: GameMode.ALL_TRUMP,
+            },
+        });
+        const result = hasHigherSameSuit(state, "p2", {
+            rank: Rank.Nine,
+            suit: Suit.Spades,
+        });
+        expect(result).toBe(false);
+    });
+
+    test("Playtest TRUMP mode", () => {
+        const state = createPlayingState({
+            plays: [
+                { player: "p1", card: { rank: Rank.Jack, suit: Suit.Spades } },
+                { player: "p2", card: { rank: Rank.Queen, suit: Suit.Spades } },
+            ],
+            currentPlayer: "p3",
+            round: {
+                deck: [],
+                hands: {
+                    p3: [
+                        { rank: Rank.Queen, suit: Suit.Hearts },
+                        { rank: Rank.Nine, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Spades },
+                        { rank: Rank.Ten, suit: Suit.Clubs },
+                        { rank: Rank.Eight, suit: Suit.Spades },
+                        { rank: Rank.King, suit: Suit.Clubs },
+                        { rank: Rank.Seven, suit: Suit.Diamonds },
+                        { rank: Rank.Eight, suit: Suit.Spades },
+                    ],
+                },
+                dealer: "a",
+                highestBidder: null,
+                roundScores: { team1: 0, team2: 0 },
+                mode: GameMode.TRUMP,
+                trump: Suit.Spades,
+            },
+        });
+        expect(getHighestPlayOfSuit(state, Suit.Spades).card).toStrictEqual({rank: Rank.Jack, suit: Suit.Spades});
+        expect(getTrickWinner(state)).toBe("p1");
+        expect(isSameTeam(MOCK_CONFIG, getTrickWinner(state), "p3")).toBe(true);
+
+        const result = handlers.handlePlay(MOCK_CONFIG, state, "p3", {
+            rank: Rank.Eight,
+            suit: Suit.Spades,
+        });
+        if (!result.ok) console.log(result.reason);
+        expect(result.ok).toBe(true);
+
     });
 });

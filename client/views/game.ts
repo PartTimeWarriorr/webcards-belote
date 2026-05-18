@@ -1,19 +1,52 @@
 import Konva from "konva";
 import { Board } from "../src/board-new";
-import { cardPlayed, clientReady, finishTrick, initGame, joinTeam, startGame, updateBoard, welcome } from "../src/socket";
-import { BoardState, CardPlayedPayload, GameConfig, GameMode, GameModePayload, Seats, Suit } from "@shared/types";
-import { LocalGameConfig } from "@/types";
+import { Bid, Card, GameConfig, GameMode, GamePhase, Modifier, Move, PlayerId, PlayerView, Seats, Suit } from "@shared/types";
+import { clientError, gameMove, revertMove, roomJoin, socket, startGame, updateGame, welcome } from "@/socket";
+import { getCardId } from "@/utils";
 
-let config: LocalGameConfig | null = null;
+let playerGameView: PlayerView | null = null;
+let localConfig: GameConfig | null = null;
+// let clientId: PlayerId | null = null;
+let clientId: PlayerId | undefined = undefined;
 
-const payloadMap: Record<string, GameModePayload> = {
-    "clubs": { mode: GameMode.TRUMP, trump: Suit.Clubs },
-    "diamonds": { mode: GameMode.TRUMP, trump: Suit.Diamonds },
-    "heart": { mode: GameMode.TRUMP, trump: Suit.Hearts },
-    "spades": { mode: GameMode.TRUMP, trump: Suit.Spades },
-    "NT" : { mode: GameMode.NO_TRUMP },
-    "AT": { mode: GameMode.ALL_TRUMP }
-};
+socket.on('connect', () => {
+    clientId = socket.id;
+});
+
+function getSelectedBid(bid: string, gameView: PlayerView): Bid {
+    switch(bid) {
+        case "C":
+        case "D":
+        case "H":
+        case "S": {
+            return {mode: GameMode.TRUMP, trump: bid as Suit}
+        }
+        case "NT": {
+            return {mode: GameMode.NO_TRUMP};
+        }
+        case "AT": {
+            return {mode: GameMode.ALL_TRUMP};
+        }
+        case "x2": {
+            if (gameView.phase !== GamePhase.Bidding) throw new Error("Not in bidding phase");
+            if (!gameView.highestBid) throw new Error("Cannot x2");
+            return {
+                ...gameView.highestBid?.[1],
+                modifier: Modifier.x2
+            } as Bid;
+        }  
+        case "x4": {
+            if (gameView.phase !== GamePhase.Bidding) throw new Error("Not in bidding phase");
+            if (!gameView.highestBid) throw new Error("Cannot x4");
+            return {
+                ...gameView.highestBid?.[1],
+                modifier: Modifier.x4
+            } as Bid;
+        }  
+    }
+
+    return {} as Bid;
+}
 
 export async function renderGame() {
     // !SCALE FOR DEMO
@@ -27,29 +60,46 @@ export async function renderGame() {
     // stage.scale({ x: scale, y: scale });
 
     const app = document.getElementById("app")!;
-    app.innerHTML = `<div id="container"></div>
-    <div class="gamemode-modal">
-        <div class="mode-btn btn-club" name="clubs"></div> 
-        <div class="mode-btn btn-diamond" name="diamonds"></div> 
-        <div class="mode-btn btn-heart" name="hearts"></div> 
-        <div class="mode-btn btn-spade" name="spades"></div> 
+    app.innerHTML = `
+    <div id="biddingMenu" class="gamemode-modal">
+        <div class="mode-btn btn-club" name="C"></div> 
+        <div class="mode-btn btn-diamond" name="D"></div> 
+        <div class="mode-btn btn-heart" name="H"></div> 
+        <div class="mode-btn btn-spade" name="S"></div> 
         <div class="mode-btn" name="NT">NT</div> 
         <div class="mode-btn" name="AT">AT</div> 
         <div class="mode-btn" name="x2">x2</div> 
         <div class="mode-btn" name="x4">x4</div> 
+        <div id="passBtn" class="pass-btn">PASS</div>
     </div>
+    <div id="errors" style="color:red">Errors here</div>
+    <div id="debugBoard" class="debug-board"></div>
+<div id="container"></div>
     `;
 
+    const passButton = document.getElementById('passBtn');
+    const debugBoard = document.getElementById('debugBoard');
+    const biddingMenu = document.getElementById('biddingMenu');
     const modeButtons = document.querySelectorAll('.mode-btn');
     modeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const name = btn.getAttribute('name');
-            console.log(name);
-            if (!name) return;
-
-             
+            if (!name || !clientId || !playerGameView) return;
+            gameMove({
+                type: "BID",
+                player: clientId,
+                bid: getSelectedBid(name, playerGameView)}); 
         });
     });
+    passButton?.addEventListener('click', () => {
+        if (!clientId) return;
+        gameMove({
+            type: "PASS",
+            player: clientId,
+        });
+    });
+
+    const errorTab = document.getElementById('errors');
 
     const stage = new Konva.Stage({
         container: "container",
@@ -62,41 +112,92 @@ export async function renderGame() {
 
     let board = await Board.init(layer, dragLayer, stage);
 
-    cardPlayed((payload: CardPlayedPayload) => {
-        console.log(`Received play: ${payload.playerId}, ${payload.card}`);
-        board.onCardPlayed(payload);
-        board.removeCardBack(payload);
+    startGame((payload: {config: GameConfig, view: PlayerView}) => {
+        localConfig = payload.config;
+        playerGameView = payload.view;
+        if (!clientId) {
+            console.error("Missing player id");
+            return;
+        }
+        const rotated = rotateSeats(payload.config.players, clientId);
+        localConfig.players = rotated;
+        board.render(localConfig.players, playerGameView);
+
+        if (playerGameView.phase === GamePhase.Bidding) {
+            if (!biddingMenu) {
+                console.error("Missing menu");
+                return;
+            }
+            biddingMenu.style.display = (playerGameView.currentBidder === clientId) ? 'grid' : 'none'; 
+        } else {
+            if (!biddingMenu) {
+                console.error("Missing menu");
+                return;
+            }
+            biddingMenu.style.display = 'none';
+        }
+
+        if (!debugBoard) return;
+        debugBoard.textContent = parseDebugInfo(clientId, localConfig, playerGameView);
     });
 
-    initGame((gameConfig: GameConfig, boardState: BoardState) => {
-        console.log(`Received config:`);
-        console.log(gameConfig);
-        console.log(`Received board:`);
-        console.log(boardState);
-        const rotated = rotateSeats(gameConfig.seats, gameConfig.playerId);
-        const allyId = getAllyId(gameConfig.teams, gameConfig.playerId);
-        config = {
-            playerId: gameConfig.playerId,
-            allyId: allyId,
-            seats: rotated as Seats,
-            teams: gameConfig.teams
-        };
+    // !!!switch here???
+    updateGame((payload: PlayerView) => {
+        playerGameView = payload;
+        if (!clientId) {
+            console.error("Missing player id");
+            return;
+        }
+        if (!localConfig) {
+            console.error("Missing config");
+            return;
+        }
+        board.render(localConfig?.players, playerGameView);
 
-        board.seats = config.seats;
-        board.load(boardState);
+        if (playerGameView.phase === GamePhase.Bidding) {
+            if (!biddingMenu) {
+                console.error("Missing menu");
+                return;
+            }
+            biddingMenu.style.display = (playerGameView.currentBidder === clientId) ? 'grid' : 'none'; 
+            console.log(biddingMenu.hidden);
+            console.log(playerGameView.currentBidder);
+            console.log(clientId);
+        } else {
+            if (!biddingMenu) {
+                console.error("Missing menu");
+                return;
+            }
+            biddingMenu.style.display = 'none';
+        }
+
+        console.log(biddingMenu?.hidden);
+        if (!debugBoard) return;
+        debugBoard.textContent = parseDebugInfo(clientId, localConfig, playerGameView);
+
     });
 
-    finishTrick(() => {
-        board.finishTrick(); 
+    clientError((err: string) => {
+        if (!errorTab) {
+            console.log(err);
+            return;
+        }
+        errorTab.textContent = err;
     });
+    
+    roomJoin("Game_1");
 
-    clientReady();
 }
 
-function rotateSeats(seats: Seats, playerId: string) {
+function rotateSeats(seats: Seats, playerId: string): Seats {
     // Rotate the player positions so player is at south
     const playerIndex = seats.findIndex((id) => id === playerId);
-    return [...seats.slice(playerIndex), ...seats.slice(0, playerIndex)];
+    const rotated = [...seats.slice(playerIndex), ...seats.slice(0, playerIndex)];
+    if (rotated.length !== 4) {
+        throw new Error("Invalid seats");
+    }
+
+    return rotated as Seats;
 }
 
 function getAllyId(teams: Record<string, string>, playerId: string): string {
@@ -106,4 +207,11 @@ function getAllyId(teams: Record<string, string>, playerId: string): string {
     );
     if (!allyId) throw new Error("No ally found");
     return allyId;
+}
+
+function parseDebugInfo(id: string, config: GameConfig, view: PlayerView): string {
+    return `
+        clientId: ${id} \n
+        ${JSON.stringify(view)} 
+    `;
 }

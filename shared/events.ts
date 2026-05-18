@@ -1,28 +1,20 @@
-import { BoardState, CardPlayedPayload, CardRaw, GameConfig, GameMode, GameModePayload, JoinRoomPayload, PlayerId } from "./types";
+import { PlayerId, Bid, Card, PlayerView, RoomJoinedPayload, Move, GameConfig } from "./types";
 
 export interface ClientToServerEvents {
-    playCard: (card: CardRaw, ack: (success: boolean) => void) => void;
-    joinRoom: (payload: JoinRoomPayload) => void;
-
-    clientReady: () => void;
-    pickMode: (payload: GameModePayload) => void;
-    
-    // New events
-    requestBoard: (playerId: PlayerId) => void;
+    "room:join": (roomId: string) => void;
+    "room:leave": (roomId: string) => void;
+    "game:move": (move: Move) => void;
 }
 
 export interface ServerToClientEvents {
-    initGame: (gameConfig: GameConfig, boardState: BoardState) => void;
-    updateBoard: (boardState: BoardState) => void;
-    welcome: (playerId: PlayerId) => void;
-    joinTeam: (team: string) => void;
-    joinedRoom: (payload: JoinRoomPayload) => void;
-    startGame: (gameConfig: GameConfig) => void;
-    modePicked: (mode: GameMode) => void;
-    startModeSetup: () => void;
-
-    // New events
-    setBoard: (boardState: BoardState) => void;
-    cardPlayed: (payload: CardPlayedPayload) => void;
-    finishTrick: () => void;
+    "welcome": (pid: PlayerId) => void;
+    "client:error": (msg: string) => void;
+    "room:log": (msg: string) => void;
+    "room:joined": (payload: RoomJoinedPayload) => void;
+    "room:left": (payload: RoomJoinedPayload) => void;
+    "room:error": (msg: string) => void;
+    "game:init": (payload: {config: GameConfig, view: PlayerView}) => void;
+    "game:state": (payload: PlayerView) => void;
+    "game:log": (msg: string) => void;
+    "game:revertMove": (card: Card) => void;
 }

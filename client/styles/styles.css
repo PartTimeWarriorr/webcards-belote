@@ -28,17 +28,28 @@ body {
     padding: 2vw;
     margin: 2vw;
     min-width: 15vw;
+    max-width: 50%;
     background-color: var(--btn-main-color); 
+    border-radius: 5px;
+    border: none;
+}
+
+.btn-small {
+    padding: 1vw;
+    margin: 1vw;
+    width: 20%;
+    max-width: 2vw;
+    background-color: var(--btn-main-color);
     border-radius: 5px;
     border: none;
 }
 
 .modal {
     background-color: white;
-    width: 30%;
+    width: 80%;
     margin: auto; 
     margin-top: 5%;
-    min-height: 20%;
+    height: 75vh;
     border-radius: 5px;
     text-align: center;
 }
@@ -51,6 +62,7 @@ body {
     width: 200%;
     display: flex;
     transition: transform 0.2s ease;
+    height: 100%;
 }
 
 .stepper-track.step-2 {
@@ -59,8 +71,27 @@ body {
 
 .step {
     width: 50%;
-    padding: 7rem;
+    padding: 4rem;
     box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.step-center {
+    align-items: center;
+}
+
+.scroll-box {
+    overflow-y: scroll;
+}
+
+.lobby-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    border: solid black;
 }
 
 .btn-blue {
@@ -78,27 +109,33 @@ body {
 }
 
 .gamemode-modal {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: fixed;
     justify-content: center;
     margin: auto;
-    margin-top: 15%;
-    width: 40%;
-    display: grid;
+    width: 30%;
+    display: none;
     grid-template-columns: auto auto auto auto;
-    background-color: white;
+    background-color: green;
+    box-shadow: black 2px 2px;
     border-radius: 10%;
-    /* visibility: hidden; */
+    position: fixed;
+    z-index: 1;
 }
 
 .gamemode-modal div {
     border: 1px solid black;
-    background-color: green;
-    padding: 2rem;
-    margin: 2rem;
+    background-color: var(--btn-main-color);
+    padding: 0.5rem;
+    margin: 0.8rem;
     border-radius: 30%;
     min-height: 70px;
     min-width: 70px;
     text-align: center;
     align-content: center;
+    cursor: pointer;
 }
 
 .btn-club {
@@ -129,4 +166,27 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
+}
+
+.pass-btn {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 40%;
+    padding: 1rem;
+}
+
+.debug-board {
+    color: yellow;
+    position: absolute;
+    top: 60%;
+    left: 80%;
+    width: 15%;
+    height: 30%;
+    border: solid yellow;
+    padding: 2rem;
+    font-size: 0.85rem;
+    overflow-y: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    z-index: 1000;
 }
