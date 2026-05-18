@@ -47,9 +47,9 @@ export function getNextToBid(
     state: BiddingState,
     config: GameConfig,
 ): PlayerId {
-    if (state.highestBid === null) {
-        return getNextPlayer(config.players, state.round.dealer);
-    }
+    // if (state.highestBid === null) {
+    //     return getNextPlayer(config.players, state.round.dealer);
+    // }
 
     const last = state.currentBidder;
 

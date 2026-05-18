@@ -160,9 +160,6 @@ export async function renderGame() {
                 return;
             }
             biddingMenu.style.display = (playerGameView.currentBidder === clientId) ? 'grid' : 'none'; 
-            console.log(biddingMenu.hidden);
-            console.log(playerGameView.currentBidder);
-            console.log(clientId);
         } else {
             if (!biddingMenu) {
                 console.error("Missing menu");
@@ -171,7 +168,6 @@ export async function renderGame() {
             biddingMenu.style.display = 'none';
         }
 
-        console.log(biddingMenu?.hidden);
         if (!debugBoard) return;
         debugBoard.textContent = parseDebugInfo(clientId, localConfig, playerGameView);
 

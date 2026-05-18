@@ -42,8 +42,8 @@ export class Game {
         return this.state;
     }
 
-    applyMove(move: Move): Result {
-        let result: Result;
+    applyMove(move: Move): Result<GameState> {
+        let result: Result<GameState>;
         switch (move.type) {
             case "BID": {
                 if (this.state.phase !== GamePhase.Bidding) {

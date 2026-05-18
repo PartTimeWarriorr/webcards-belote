@@ -84,10 +84,10 @@ export function setupSocket(server: any) {
 
             if (result.ok) {
                 broadCastGameState(io, result.state, room);
+
+                // if ()
             } else {
                 socket.emit("client:error", result.reason);
-                if (move.type === 'PLAY')
-                    socket.emit("game:revertMove", move.card);
             }
         });
 

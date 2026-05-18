@@ -362,4 +362,22 @@ describe("Playtest", () => {
         expect(result.ok).toBe(true);
 
     });
+
+    test("Playtest - Bidding", () => {
+        const state = createBiddingState({
+            currentBidder: "p1",
+            highestBid: null,
+            round: {
+                dealer: "p4",
+                highestBidder: null,
+                deck: [],
+                hands: { p1: [], p2: [], p3: [], p4: [] },
+                roundScores: { team1: 6, team2: 7 },
+            },
+        });
+
+        const result = handlers.handleBid(MOCK_CONFIG, state, "p1", {mode: GameMode.TRUMP, trump: Suit.Spades});
+        expect(result.ok).toBe(true);
+        if (result.ok && result.state.phase === GamePhase.Bidding) expect(result.state.currentBidder).toBe("p2");
+    });
 });
