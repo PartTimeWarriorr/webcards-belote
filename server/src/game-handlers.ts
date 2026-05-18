@@ -295,7 +295,7 @@ export function handleResolveTrick(
     const trickWinner = getTrickWinner(state);
 
     if (isRoundOver) {
-        const newRoundScores = addTrickScores(config, state, trickWinner);
+        const newRoundScores = addTrickScores(config, state, trickWinner, isRoundOver);
         const newState = {
             ...state,
             round: {
@@ -309,8 +309,10 @@ export function handleResolveTrick(
             ok: true,
             state: {
                 phase: GamePhase.Scoring,
+                ready: new Set(),
                 round: {
                     ...state.round,
+                    roundScores: newRoundScores,
                 },
                 totalScores: {
                     team1: scores.team1,
@@ -320,7 +322,7 @@ export function handleResolveTrick(
             },
         };
     } else {
-        const newRoundScores = addTrickScores(config, state, trickWinner);
+        const newRoundScores = addTrickScores(config, state, trickWinner, isRoundOver);
         return {
             ok: true,
             state: {

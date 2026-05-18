@@ -8,10 +8,12 @@ import { ServerLogger } from "./server-log";
 import { Server } from "socket.io";
 import {
     GameConfig,
+    GamePhase,
     GameState,
     Move,
     PlayerId,
     PlayerView,
+    TrickStatus,
 } from "@shared/types";
 import { Room } from "./room";
 
@@ -85,7 +87,15 @@ export function setupSocket(server: any) {
             if (result.ok) {
                 broadCastGameState(io, result.state, room);
 
-                // if ()
+                if (result.state.phase === GamePhase.Playing && result.state.trickStatus === TrickStatus.Resolving) {
+                    const result = room.game.applyMove({type: "RESOLVE_TRICK"});
+                    if (result.ok) {
+                        setTimeout(() => {
+                            broadCastGameState(io, result.state, room);
+                        }, 1000);
+                    }
+                }
+
             } else {
                 socket.emit("client:error", result.reason);
             }

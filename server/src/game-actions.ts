@@ -318,7 +318,7 @@ function getWinnerTeamId(scores: Scores): TeamId | undefined {
 }
 
 function calcScore(base: number): number {
-    return Math.floor(base / 10);
+    return Math.round(base / 10);
 }
 
 export function addRoundScores(
@@ -327,7 +327,6 @@ export function addRoundScores(
 ): { scores: Scores; hanging: number } {
     const newTotal = { ...state.totalScores };
     const roundScores = state.round.roundScores;
-
     if (!state.round.highestBidder)
         throw new Error("Game has no highest bidder");
 
@@ -383,6 +382,7 @@ export function addTrickScores(
     config: GameConfig,
     state: PlayingState,
     winner: PlayerId,
+    isRoundOver: boolean,
 ): Scores {
     const trickScore = state.plays.reduce((total, play) => {
         return (total += getCardScore(state, play.card));
@@ -392,10 +392,12 @@ export function addTrickScores(
     return {
         team1:
             state.round.roundScores.team1 +
-            ("team1" === trickWinnerId ? trickScore : 0),
+            ("team1" === trickWinnerId ? trickScore : 0) +
+            ("team1" === trickWinnerId && isRoundOver ? 10 : 0),
         team2:
             state.round.roundScores.team2 +
-            ("team2" === trickWinnerId ? trickScore : 0),
+            ("team2" === trickWinnerId ? trickScore : 0) +
+            ("team2" === trickWinnerId && isRoundOver ? 10 : 0),
     };
 }
 

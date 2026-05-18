@@ -13,7 +13,7 @@ import {
 import { createBiddingState, createPlayingState } from "./state-builders";
 import * as handlers from "./game-handlers";
 import { compareCardsPower, higherBid } from "./compare";
-import { getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit, isSameTeam } from "./game-actions";
+import { addTrickScores, getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit, isSameTeam } from "./game-actions";
 
 const MOCK_CONFIG: GameConfig = {
     players: ["p1", "p2", "p3", "p4"],
@@ -379,5 +379,41 @@ describe("Playtest", () => {
         const result = handlers.handleBid(MOCK_CONFIG, state, "p1", {mode: GameMode.TRUMP, trump: Suit.Spades});
         expect(result.ok).toBe(true);
         if (result.ok && result.state.phase === GamePhase.Bidding) expect(result.state.currentBidder).toBe("p2");
+    });
+});
+
+describe("Scoring Phase", () => {
+    test("Last trick score", () => {
+        const state = createPlayingState({
+            currentPlayer: "p4",
+            plays: [
+                {player: "p1", card: {rank: Rank.Nine, suit: Suit.Spades}},
+                {player: "p2", card: {rank: Rank.Ace, suit: Suit.Spades}},
+                {player: "p3", card: {rank: Rank.Eight, suit: Suit.Spades}}
+            ],
+            round: {
+                mode: GameMode.NO_TRUMP,
+                dealer: "p2",
+                highestBidder: "p2",
+                deck: [],
+                hands: { p1: [], p2: [], p3: [], p4: [{rank: Rank.Queen, suit: Suit.Spades}] },
+                roundScores: {team1: 0, team2: 0},
+            }
+        });
+
+        const result = handlers.handlePlay(MOCK_CONFIG, state, "p4", {rank: Rank.Queen, suit: Suit.Spades});
+        if (!result.ok) console.log(result.reason);
+        expect(result.ok).toBe(true);
+        if (result.ok && result.state.phase === GamePhase.Playing) {
+            expect(result.state.plays.length).toBe(4);
+            expect(result.state.trickStatus).toBe(TrickStatus.Resolving);
+            const result_2 = handlers.handleResolveTrick(MOCK_CONFIG, result.state);
+            if (result_2.ok) {
+                expect(result_2.state.phase).toBe(GamePhase.Scoring);
+                console.log(result_2.state.totalScores);
+            }
+        }
+
+
     });
 });

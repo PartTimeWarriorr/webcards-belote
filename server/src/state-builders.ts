@@ -41,6 +41,7 @@ export function createScoringState(overrides: Partial<ScoringState> = {}): Scori
     const base = createBaseState();
     return {
         phase: GamePhase.Scoring,
+        ready: new Set(),
         ...base,
         ...overrides
     };
