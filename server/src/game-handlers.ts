@@ -229,50 +229,87 @@ export function handlePlay(
 
 export function handleStartNewRound(
     config: GameConfig,
-    state: ScoringState,
+    state?: GameState,
 ): Result<GameState> {
-    if (state.phase !== GamePhase.Scoring)
-        return {
-            ok: false,
-            reason: "Game is not in scoring phase.",
-        };
-    if (!isRoundFinished(state)) {
-        return {
-            ok: false,
-            reason: "Round is not over yet",
-        };
-    }
+    if (!state) {
+        // Is first round of the game
+        const dealer = config.players[Math.floor(Math.random() * config.players.length)];
 
-    const dealer = getNextPlayer(config.players, state.round.dealer);
-    const newState: BiddingState = {
-        phase: GamePhase.Bidding,
-        round: {
-            dealer: dealer,
-            highestBidder: null,
-            deck: shuffle(),
-            hands: {},
-            roundScores: { team1: 0, team2: 0 },
-        },
-        totalScores: state.totalScores,
-        hangingScore: state.hangingScore,
-        highestBid: null,
-        currentBidder: getNextPlayer(config.players, dealer),
-        passed: new Set(),
-    };
-
-    const [newDeck, newHands] = dealInitial(newState, config);
-
-    return {
-        ok: true,
-        state: {
-            ...newState,
+        const tempState : BiddingState = {
+            phase: GamePhase.Bidding,
             round: {
-                ...newState.round,
+                dealer: dealer,
+                highestBidder: null,
+                deck: shuffle(),
+                hands: {},
+                roundScores: {team1: 0, team2: 0},
+            },
+            totalScores: {team1: 0, team2: 0},
+            hangingScore: 0,
+            highestBid: null,
+            currentBidder: getNextPlayer(config.players, dealer),
+            passed: new Set(),
+        };
+
+        const [newDeck, newHands] = dealInitial(tempState, config);
+        const state = {
+            ...tempState,
+            round: {
+                ...tempState.round,
                 deck: newDeck,
                 hands: newHands,
             },
-        },
-    };
+        };
+        return {
+            ok: true, 
+            state: state,
+        };
+    } else {
+        // Is 2nd or later round of the game
+        if (state.phase !== GamePhase.Scoring)
+            return {
+                ok: false,
+                reason: "Game is not in scoring phase.",
+            };
+            
+        if (!isRoundFinished(state)) {
+            return {
+                ok: false,
+                reason: "Round is not over yet",
+            };
+        }
+
+        const dealer = getNextPlayer(config.players, state.round.dealer);
+        const newState: BiddingState = {
+            phase: GamePhase.Bidding,
+            round: {
+                dealer: dealer,
+                highestBidder: null,
+                deck: shuffle(),
+                hands: {},
+                roundScores: { team1: 0, team2: 0 },
+            },
+            totalScores: state.totalScores,
+            hangingScore: state.hangingScore,
+            highestBid: null,
+            currentBidder: getNextPlayer(config.players, dealer),
+            passed: new Set(),
+        };
+
+        const [newDeck, newHands] = dealInitial(newState, config);
+
+        return {
+            ok: true,
+            state: {
+                ...newState,
+                round: {
+                    ...newState.round,
+                    deck: newDeck,
+                    hands: newHands,
+                },
+            },
+        };
+    }
 }
 
 export function handleResolveTrick(

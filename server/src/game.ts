@@ -1,5 +1,4 @@
 import { GamePhase, GameState, GameConfig, Move, Result } from "@shared/types";
-import { dealInitial, getNextPlayer, shuffle } from "./game-actions";
 import * as handlers from "./game-handlers";
 
 export class Game {
@@ -9,33 +8,10 @@ export class Game {
     private history: Array<GameState> = [];
 
     constructor(config: GameConfig) {
-        const dealer =
-            config.players[Math.floor(Math.random() * config.players.length)];
-        this.state = {
-            phase: GamePhase.Bidding,
-            round: {
-                dealer: dealer,
-                highestBidder: null,
-                deck: shuffle(),
-                hands: {},
-                roundScores: { team1: 0, team2: 0 },
-            },
-            totalScores: { team1: 0, team2: 0 },
-            hangingScore: 0,
-            highestBid: null,
-            currentBidder: getNextPlayer(config.players, dealer),
-            passed: new Set(),
-        };
-        const [newDeck, newHands] = dealInitial(this.state, config);
-        this.state = {
-            ...this.state,
-            round: {
-                ...this.state.round,
-                deck: newDeck,
-                hands: newHands,
-            },
-        };
         this.config = config;
+        const result = handlers.handleStartNewRound(this.config);
+        if (!result.ok) throw new Error(result.reason);
+        this.state = result.state;
     }
 
     getState() {
@@ -100,6 +76,10 @@ export class Game {
                 break;
             }
             case "START_NEW_ROUND": {
+                if (!this.state) {
+                    result = handlers.handleStartNewRound(this.config);
+                    break;
+                }
                 if (this.state.phase !== GamePhase.Scoring) {
                     return {
                         ok: false,

@@ -14,6 +14,7 @@ import { createBiddingState, createPlayingState } from "./state-builders";
 import * as handlers from "./game-handlers";
 import { compareCardsPower, higherBid } from "./compare";
 import { addTrickScores, getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit, isSameTeam } from "./game-actions";
+import { Game } from "./game";
 
 const MOCK_CONFIG: GameConfig = {
     players: ["p1", "p2", "p3", "p4"],
@@ -442,4 +443,15 @@ describe("Scoring Phase", () => {
             expect(result.state.phase).toBe(GamePhase.Scoring);
         }
     });
-});
+})
+
+describe("Starting new round", () => {
+    test("Starting first round", () => {
+        const game = new Game(MOCK_CONFIG);
+        const state = game.getState();
+        const result = handlers.handleStartNewRound(MOCK_CONFIG, state);
+
+        console.log(state);
+        console.log(result);
+    });
+})

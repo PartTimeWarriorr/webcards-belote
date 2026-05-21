@@ -119,7 +119,7 @@ export function setupSocket(server: any) {
 
             if (room.allReady()) {
                 if (!room.game) {
-                    socket.emit("client:error", "Not in any room");
+                    socket.emit("client:error", "No game started");
                     return;
                 }
                 const result = room.game.applyMove({type: "START_NEW_ROUND"});
