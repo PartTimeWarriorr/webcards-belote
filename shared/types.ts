@@ -109,7 +109,6 @@ export interface PlayingState extends BaseGameState {
 
 export interface ScoringState extends BaseGameState {
     phase: GamePhase.Scoring;
-    ready: Set<PlayerId>;
 }
 
 export interface RoundState {

@@ -1,7 +1,30 @@
 import Konva from "konva";
 import { Board } from "../src/board-new";
-import { Bid, Card, GameConfig, GameMode, GamePhase, Modifier, Move, PlayerId, PlayerView, Seats, Suit } from "@shared/types";
-import { clientError, gameMove, revertMove, roomJoin, socket, startGame, updateGame, welcome } from "@/socket";
+import {
+    Bid,
+    Card,
+    GameConfig,
+    GameMode,
+    GamePhase,
+    Modifier,
+    Move,
+    PlayerId,
+    PlayerView,
+    Scores,
+    Seats,
+    Suit,
+} from "@shared/types";
+import {
+    clientError,
+    gameMove,
+    roomJoin,
+    roomReadied,
+    roomReady,
+    socket,
+    startGame,
+    updateGame,
+    welcome,
+} from "@/socket";
 import { getCardId } from "@/utils";
 
 let playerGameView: PlayerView | null = null;
@@ -9,40 +32,42 @@ let localConfig: GameConfig | null = null;
 // let clientId: PlayerId | null = null;
 let clientId: PlayerId | undefined = undefined;
 
-socket.on('connect', () => {
+socket.on("connect", () => {
     clientId = socket.id;
 });
 
 function getSelectedBid(bid: string, gameView: PlayerView): Bid {
-    switch(bid) {
+    switch (bid) {
         case "C":
         case "D":
         case "H":
         case "S": {
-            return {mode: GameMode.TRUMP, trump: bid as Suit}
+            return { mode: GameMode.TRUMP, trump: bid as Suit };
         }
         case "NT": {
-            return {mode: GameMode.NO_TRUMP};
+            return { mode: GameMode.NO_TRUMP };
         }
         case "AT": {
-            return {mode: GameMode.ALL_TRUMP};
+            return { mode: GameMode.ALL_TRUMP };
         }
         case "x2": {
-            if (gameView.phase !== GamePhase.Bidding) throw new Error("Not in bidding phase");
+            if (gameView.phase !== GamePhase.Bidding)
+                throw new Error("Not in bidding phase");
             if (!gameView.highestBid) throw new Error("Cannot x2");
             return {
                 ...gameView.highestBid?.[1],
-                modifier: Modifier.x2
+                modifier: Modifier.x2,
             } as Bid;
-        }  
+        }
         case "x4": {
-            if (gameView.phase !== GamePhase.Bidding) throw new Error("Not in bidding phase");
+            if (gameView.phase !== GamePhase.Bidding)
+                throw new Error("Not in bidding phase");
             if (!gameView.highestBid) throw new Error("Cannot x4");
             return {
                 ...gameView.highestBid?.[1],
-                modifier: Modifier.x4
+                modifier: Modifier.x4,
             } as Bid;
-        }  
+        }
     }
 
     return {} as Bid;
@@ -60,38 +85,42 @@ export async function renderGame() {
     // stage.scale({ x: scale, y: scale });
 
     const app = document.getElementById("app")!;
-    app.innerHTML = `
-    <div id="biddingMenu" class="gamemode-modal">
-        <div class="mode-btn btn-club" name="C"></div> 
-        <div class="mode-btn btn-diamond" name="D"></div> 
-        <div class="mode-btn btn-heart" name="H"></div> 
-        <div class="mode-btn btn-spade" name="S"></div> 
-        <div class="mode-btn" name="NT">NT</div> 
-        <div class="mode-btn" name="AT">AT</div> 
-        <div class="mode-btn" name="x2">x2</div> 
-        <div class="mode-btn" name="x4">x4</div> 
-        <div id="passBtn" class="pass-btn">PASS</div>
-    </div>
-    <div id="errors" style="color:red">Errors here</div>
-    <div id="debugBoard" class="debug-board"></div>
-<div id="container"></div>
-    `;
+        app.innerHTML = `
+        <div id="biddingMenu" class="gamemode-modal">
+            <div class="mode-btn btn-club" name="C"></div>
+            <div class="mode-btn btn-diamond" name="D"></div>
+            <div class="mode-btn btn-heart" name="H"></div>
+            <div class="mode-btn btn-spade" name="S"></div>
+            <div class="mode-btn" name="NT">NT</div>
+            <div class="mode-btn" name="AT">AT</div>
+            <div class="mode-btn" name="x2">x2</div>
+            <div class="mode-btn" name="x4">x4</div>
+            <div id="passBtn" class="pass-btn">PASS</div>
+        </div>
+        <div id="scoreBoard" class="scoreboard-modal">
+        </div>
+        <div id="errors" style="color:red">Errors here</div>
+        <div id="debugBoard" class="debug-board"></div>
+    <div id="container"></div>
+        `;
 
-    const passButton = document.getElementById('passBtn');
-    const debugBoard = document.getElementById('debugBoard');
-    const biddingMenu = document.getElementById('biddingMenu');
-    const modeButtons = document.querySelectorAll('.mode-btn');
-    modeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const name = btn.getAttribute('name');
+    const scoreboard = document.getElementById("scoreBoard");
+    const passButton = document.getElementById("passBtn");
+    const debugBoard = document.getElementById("debugBoard");
+    const biddingMenu = document.getElementById("biddingMenu");
+    const modeButtons = document.querySelectorAll(".mode-btn");
+    modeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const name = btn.getAttribute("name");
             if (!name || !clientId || !playerGameView) return;
             gameMove({
                 type: "BID",
                 player: clientId,
-                bid: getSelectedBid(name, playerGameView)}); 
+                bid: getSelectedBid(name, playerGameView),
+            });
         });
     });
-    passButton?.addEventListener('click', () => {
+    passButton?.addEventListener("click", () => {
         if (!clientId) return;
         gameMove({
             type: "PASS",
@@ -99,7 +128,7 @@ export async function renderGame() {
         });
     });
 
-    const errorTab = document.getElementById('errors');
+    const errorTab = document.getElementById("errors");
 
     const stage = new Konva.Stage({
         container: "container",
@@ -112,7 +141,7 @@ export async function renderGame() {
 
     let board = await Board.init(layer, dragLayer, stage);
 
-    startGame((payload: {config: GameConfig, view: PlayerView}) => {
+    startGame((payload: { config: GameConfig; view: PlayerView }) => {
         localConfig = payload.config;
         playerGameView = payload.view;
         if (!clientId) {
@@ -128,17 +157,22 @@ export async function renderGame() {
                 console.error("Missing menu");
                 return;
             }
-            biddingMenu.style.display = (playerGameView.currentBidder === clientId) ? 'grid' : 'none'; 
+            biddingMenu.style.display =
+                playerGameView.currentBidder === clientId ? "grid" : "none";
         } else {
             if (!biddingMenu) {
                 console.error("Missing menu");
                 return;
             }
-            biddingMenu.style.display = 'none';
+            biddingMenu.style.display = "none";
         }
 
         if (!debugBoard) return;
-        debugBoard.textContent = parseDebugInfo(clientId, localConfig, playerGameView);
+        debugBoard.textContent = parseDebugInfo(
+            clientId,
+            localConfig,
+            playerGameView,
+        );
     });
 
     // !!!switch here???
@@ -154,23 +188,51 @@ export async function renderGame() {
         }
         board.render(localConfig?.players, playerGameView);
 
-        if (playerGameView.phase === GamePhase.Bidding) {
-            if (!biddingMenu) {
-                console.error("Missing menu");
-                return;
-            }
-            biddingMenu.style.display = (playerGameView.currentBidder === clientId) ? 'grid' : 'none'; 
+
+        if (biddingMenu) {
+            biddingMenu.style.display =
+                playerGameView.phase === GamePhase.Bidding &&
+                playerGameView.currentBidder === clientId
+                    ? "grid"
+                    : "none";
         } else {
-            if (!biddingMenu) {
-                console.error("Missing menu");
-                return;
-            }
-            biddingMenu.style.display = 'none';
+            console.error("Missing bidding menu");
         }
 
-        if (!debugBoard) return;
-        debugBoard.textContent = parseDebugInfo(clientId, localConfig, playerGameView);
+        if (scoreboard) {
+            scoreboard.style.display =
+                playerGameView.phase === GamePhase.Scoring ? "block" : "none";
+        } else {
+            console.error("Missing scoreboard");
+        }
 
+        if (playerGameView.phase === GamePhase.Scoring) {
+            renderScoreboard(playerGameView.totalScores);
+        }
+
+        if (debugBoard) {
+            debugBoard.textContent = parseDebugInfo(
+                clientId,
+                localConfig,
+                playerGameView,
+            );
+        } else {
+            console.error("Missing debug board");
+        }
+    });
+
+    roomReadied((readyPlayers: PlayerId[]) => {
+        if (!clientId || !localConfig || !playerGameView) return; 
+        if (debugBoard) {
+            debugBoard.textContent = parseDebugInfo(
+                clientId,
+                localConfig,
+                playerGameView,
+                readyPlayers.length
+            );
+        } else {
+            console.error("Missing debug board");
+        }
     });
 
     clientError((err: string) => {
@@ -180,15 +242,17 @@ export async function renderGame() {
         }
         errorTab.textContent = err;
     });
-    
-    roomJoin("Game_1");
 
+    roomJoin("Game_1");
 }
 
 function rotateSeats(seats: Seats, playerId: string): Seats {
     // Rotate the player positions so player is at south
     const playerIndex = seats.findIndex((id) => id === playerId);
-    const rotated = [...seats.slice(playerIndex), ...seats.slice(0, playerIndex)];
+    const rotated = [
+        ...seats.slice(playerIndex),
+        ...seats.slice(0, playerIndex),
+    ];
     if (rotated.length !== 4) {
         throw new Error("Invalid seats");
     }
@@ -205,9 +269,48 @@ function getAllyId(teams: Record<string, string>, playerId: string): string {
     return allyId;
 }
 
-function parseDebugInfo(id: string, config: GameConfig, view: PlayerView): string {
+function parseDebugInfo(
+    id: string,
+    config: GameConfig,
+    view: PlayerView,
+    readyPlayers: number = 0,
+): string {
     return `
         clientId: ${id} \n
-        ${JSON.stringify(view)} 
+        ${JSON.stringify(view)} \n
+        readied: ${readyPlayers}/4
     `;
+}
+
+function renderScoreboard(scores: Scores) {
+    const scoreboard = document.getElementById("scoreBoard")!;
+
+    scoreboard.innerHTML = `
+                <p class="scoreboard-title">
+                    Scores
+                </p>
+                <p class="scoreboard-subtitle">
+                    Team1
+                </p>
+                <p class="scoreboard-text">
+                    From cards: ${scores.team1}<br> 
+                    From announcements:
+                </p>
+                <p class="scoreboard-subtitle">
+                    Team2
+                </p>
+                <p class="scoreboard-text">
+                    From cards: ${scores.team2}<br>
+                    From announcements:
+                </p>
+                <input type="checkbox" name="readyButton" id="readyButton" class="hidden">
+                <label for="readyButton" class="scoreboard-button btn-main">Ready</label>
+    `;
+
+    const readyButton: HTMLInputElement = scoreboard.querySelector('#readyButton')!;
+
+    readyButton.addEventListener('click', () => {
+        const isReady = readyButton.checked;
+        roomReady(isReady); 
+    });
 }

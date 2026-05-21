@@ -309,7 +309,6 @@ export function handleResolveTrick(
             ok: true,
             state: {
                 phase: GamePhase.Scoring,
-                ready: new Set(),
                 round: {
                     ...state.round,
                     roundScores: newRoundScores,

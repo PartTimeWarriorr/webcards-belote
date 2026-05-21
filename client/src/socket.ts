@@ -1,7 +1,7 @@
 import io from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
-import { Card, GameConfig, Move, PlayerView, RoomJoinedPayload } from "@shared/types";
+import { Card, GameConfig, Move, PlayerId, PlayerView, RoomJoinedPayload } from "@shared/types";
 
 
 const SERVER_URL = "http://localhost:8080";
@@ -18,6 +18,10 @@ export function roomLeave(roomId: string) {
 
 export function gameMove(move: Move) {
     socket.emit("game:move", move);
+}
+
+export function roomReady(isReady: boolean) {
+    socket.emit("room:ready", isReady);
 }
 
 // Server to Client
@@ -41,6 +45,6 @@ export function clientError(callback: (err: string) => void) {
     socket.on("client:error", callback);
 }
 
-export function revertMove(callback: (card: Card) => void) {
-    socket.on("game:revertMove", callback);
+export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
+    socket.on("room:readied", callback);
 }

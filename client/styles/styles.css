@@ -4,6 +4,8 @@
 
 :root {
     --btn-main-color: #57f269;
+    --btn-main-hover: #48c357;
+    --btn-main-toggle: #13761e;
     /* --bg-color: #FDFBD4; */
     --bg-color: black;
     --club-icon: url('/suits/club.svg');
@@ -32,6 +34,11 @@ body {
     background-color: var(--btn-main-color); 
     border-radius: 5px;
     border: none;
+    transition: background-color 0.125s;
+}
+
+.btn-main:hover {
+    background-color: var(--btn-main-hover);
 }
 
 .btn-small {
@@ -189,4 +196,60 @@ body {
     overflow-wrap: break-word;
     word-break: break-word;
     z-index: 1000;
+}
+
+.scoreboard-modal {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: fixed;
+    justify-content: center;
+    margin: auto;
+    padding: 1.2rem;
+    width: 30%;
+    display: none;
+    box-shadow: black 2px 2px;
+    border-radius: 10%;
+    position: fixed;
+    z-index: 1;
+    background-color: white;
+    text-align: center;
+}
+
+.scoreboard-title {
+    text-align: center;
+    font-size: 2.2rem;
+    margin: auto;
+}
+
+.scoreboard-subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    /* color:; */
+}
+
+.scoreboard-text {
+    width: 90%;
+    margin: auto;
+    overflow-wrap: break-word;
+    text-align: left;
+}
+
+.scoreboard-button {
+    justify-self: center;
+    width: 40%;
+    display: block;
+    margin: 0.5rem;
+    padding: 1rem;
+    font-size: 1.2rem;
+}
+
+.hidden {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+}
+
+input:checked+label.btn-main {
+    background-color: var(--btn-main-toggle);
 }

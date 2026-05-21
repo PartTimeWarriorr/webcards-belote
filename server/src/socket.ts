@@ -87,17 +87,45 @@ export function setupSocket(server: any) {
             if (result.ok) {
                 broadCastGameState(io, result.state, room);
 
-                if (result.state.phase === GamePhase.Playing && result.state.trickStatus === TrickStatus.Resolving) {
+                if (shouldResolveTrick(result.state)) {
                     const result = room.game.applyMove({type: "RESOLVE_TRICK"});
                     if (result.ok) {
                         setTimeout(() => {
                             broadCastGameState(io, result.state, room);
                         }, 1000);
+                    } else {
+                        console.log(result.reason);
                     }
                 }
 
             } else {
                 socket.emit("client:error", result.reason);
+            }
+        });
+
+        socket.on("room:ready", (isReady) => {
+            const room = roomManager.findRoomBySocket(socket.id);
+            if (!room) {
+                socket.emit("client:error", "Not in any room");
+                return;
+            }
+            try {
+                isReady ? room.ready(socket.id) : room.unready(socket.id);
+            } catch(err) {
+                socket.emit("client:error", err instanceof Error ? err.message : "Unknown error");
+            }
+
+            io.to(room.name).emit("room:readied", Array.from(room.readyPlayers));
+
+            if (room.allReady()) {
+                if (!room.game) {
+                    socket.emit("client:error", "Not in any room");
+                    return;
+                }
+                const result = room.game.applyMove({type: "START_NEW_ROUND"});
+                if (result.ok) {
+                    broadCastGameState(io, result.state, room);
+                }
             }
         });
 
@@ -175,4 +203,8 @@ function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
             numCards,
         },
     };
+}
+
+function shouldResolveTrick(state: GameState): boolean {
+    return state.phase === GamePhase.Playing && state.trickStatus === TrickStatus.Resolving;
 }

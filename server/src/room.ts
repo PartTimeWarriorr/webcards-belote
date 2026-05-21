@@ -9,6 +9,22 @@ export class Room {
 
     game?: Game;
 
+    readyPlayers: Set<PlayerId> = new Set();
+
+    ready(player: PlayerId) {
+        if (!this.players.has(player)) throw new Error("Player is not in this room");
+        this.readyPlayers.add(player);
+    }
+
+    unready(player: PlayerId) {
+        if (!this.players.has(player)) throw new Error("Player is not in this room");
+        this.readyPlayers.delete(player);
+    }
+
+    allReady(): boolean {
+        return this.readyPlayers.size === 4;
+    }
+
     getGameState(): GameState {
         if (!this.game) throw new Error("No game currently started");
 

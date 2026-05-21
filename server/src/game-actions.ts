@@ -13,6 +13,8 @@ import {
     TeamId,
     Scores,
     Result,
+    GamePhase,
+    TrickStatus,
 } from "@shared/types";
 import { ALL_TRUMP_SCORE, NO_TRUMP_SCORE } from "./game-rules";
 
@@ -90,7 +92,7 @@ export function dealInitial(
     const hands = state.round.hands;
 
     config.players.forEach((p) => {
-        hands[p] = deck.splice(0, 5);
+        hands[p] = deck.splice(0, 1);
     });
 
     return [deck, hands];
@@ -104,7 +106,7 @@ export function dealFinal(
     const hands = state.round.hands;
 
     config.players.forEach((p) => {
-        hands[p] = hands[p].concat(deck.splice(0, 3));
+        hands[p] = hands[p].concat(deck.splice(0, 1));
     });
 
     return [deck, hands];
