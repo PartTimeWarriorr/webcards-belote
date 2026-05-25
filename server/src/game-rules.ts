@@ -51,3 +51,16 @@ export const NO_TRUMP_SCORE: Record<Rank, number> = {
     "8": 0,
     "7": 0,
 };
+
+export const ANNOUNCE_ORDER: Record<Rank, number> = {
+    A: 8,
+    K: 7,
+    Q: 6,
+    J: 5,
+    T: 4,
+    "9": 3,
+    "8": 2,
+    "7": 1
+};
+
+export const VALAT_SCORE = 90;

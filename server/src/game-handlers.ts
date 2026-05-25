@@ -15,9 +15,11 @@ import {
     addTrickScores,
     allButBidderPassed,
     allPassed,
+    calcAnnScores,
     canPlay,
     dealFinal,
     dealInitial,
+    findAnns,
     getNextPlayer,
     getNextToBid,
     getTrickWinner,
@@ -79,31 +81,39 @@ export function handlePass(
 
     if (allButBidderPassed({ ...state, passed: newPasses }, config)) {
         const [newDeck, newHands] = dealFinal(state, config);
+        const tempState: PlayingState = {
+            ...state,
+            phase: GamePhase.Playing,
+            round: {
+                ...state.round,
+                highestBidder: state.highestBid?.[0] ?? "",
+                deck: newDeck,
+                hands: newHands,
+                mode: state.highestBid?.[1].mode ?? GameMode.ALL_TRUMP,
+                trump:
+                    state.highestBid?.[1].mode === GameMode.TRUMP
+                        ? state.highestBid[1].trump
+                        : undefined,
+                modifier: state.highestBid?.[1].modifier,
+                roundScores: { team1: 0, team2: 0 },
+            },
+            currentPlayer: getNextPlayer(
+                config.players,
+                state.round.dealer,
+            ),
+            trickStatus: TrickStatus.Playing,
+            plays: [],
+        }
 
+        const announcements =  tempState.round.mode === GameMode.NO_TRUMP ? {} : findAnns(config, tempState);
         return {
             ok: true,
             state: {
-                ...state,
-                phase: GamePhase.Playing,
+                ...tempState,
                 round: {
-                    ...state.round,
-                    highestBidder: state.highestBid?.[0] ?? "",
-                    deck: newDeck,
-                    hands: newHands,
-                    mode: state.highestBid?.[1].mode ?? GameMode.ALL_TRUMP,
-                    trump:
-                        state.highestBid?.[1].mode === GameMode.TRUMP
-                            ? state.highestBid[1].trump
-                            : undefined,
-                    modifier: state.highestBid?.[1].modifier,
-                    roundScores: { team1: 0, team2: 0 },
-                },
-                currentPlayer: getNextPlayer(
-                    config.players,
-                    state.round.dealer,
-                ),
-                trickStatus: TrickStatus.Playing,
-                plays: [],
+                    ...tempState.round,
+                    announcements: announcements
+                }
             },
         };
     }
@@ -113,11 +123,13 @@ export function handlePass(
         const newState: BiddingState = {
             phase: GamePhase.Bidding,
             round: {
+                announcements: {},
                 dealer: newDealer,
                 highestBidder: null,
                 deck: shuffle(),
                 hands: {},
                 roundScores: { team1: 0, team2: 0 },
+                announcementScores:  { team1: 0, team2: 0 }
             },
             totalScores: state.totalScores,
             hangingScore: state.hangingScore,
@@ -238,11 +250,13 @@ export function handleStartNewRound(
         const tempState : BiddingState = {
             phase: GamePhase.Bidding,
             round: {
+                announcements: {},
                 dealer: dealer,
                 highestBidder: null,
                 deck: shuffle(),
                 hands: {},
                 roundScores: {team1: 0, team2: 0},
+                announcementScores:  { team1: 0, team2: 0 }
             },
             totalScores: {team1: 0, team2: 0},
             hangingScore: 0,
@@ -283,11 +297,13 @@ export function handleStartNewRound(
         const newState: BiddingState = {
             phase: GamePhase.Bidding,
             round: {
+                announcements: {},
                 dealer: dealer,
                 highestBidder: null,
                 deck: shuffle(),
                 hands: {},
                 roundScores: { team1: 0, team2: 0 },
+                announcementScores:  { team1: 0, team2: 0 }
             },
             totalScores: state.totalScores,
             hangingScore: state.hangingScore,
@@ -333,11 +349,13 @@ export function handleResolveTrick(
 
     if (isRoundOver) {
         const newRoundScores = addTrickScores(config, state, trickWinner, isRoundOver);
+        const annScores = calcAnnScores(config, state);
         const newState = {
             ...state,
             round: {
                 ...state.round,
                 roundScores: newRoundScores,
+                announcementScores: annScores,
             },
         };
         const { scores, hanging } = addRoundScores(config, newState);

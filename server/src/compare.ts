@@ -1,5 +1,5 @@
-import { ALL_TRUMP_POWER, NO_TRUMP_POWER } from "./game-rules";
-import { GameMode, Bid, Suit, SUIT_ORDER, GameState, Card } from "@shared/types";
+import { ALL_TRUMP_POWER, ANNOUNCE_ORDER, NO_TRUMP_POWER } from "./game-rules";
+import { GameMode, Bid, Suit, SUIT_ORDER, GameState, Card, Announcement, AnnouncementType, ANNOUNCEMENT_LENGTH } from "@shared/types";
 
 function compareSuits(left: Suit, right: Suit) {
     return SUIT_ORDER.indexOf(left) - SUIT_ORDER.indexOf(right);
@@ -47,4 +47,28 @@ function getCardPower(state: GameState, card: Card): number {
 
 export function compareCardsPower(state: GameState, left: Card, right: Card) {
     return getCardPower(state, left) - getCardPower(state, right);
+}
+
+function getCardOrder(card: Card): number {
+    return ANNOUNCE_ORDER[card.rank];
+}
+
+export function compareCardsFull(left: Card, right: Card) {
+    if (left.suit !== right.suit) {
+        return compareSuits(left.suit, right.suit);
+    } else if (left.rank !== right.rank) {
+        return getCardOrder(left) - getCardOrder(right);
+    } else {
+        return 0;
+    }
+}
+
+export function compareSequences(left: Announcement, right: Announcement) {
+    if (left.type === AnnouncementType.Square || left.type === AnnouncementType.Belot || right.type === AnnouncementType.Square || right.type === AnnouncementType.Belot)
+        return 0;
+
+    if (left.type === right.type) 
+        return ANNOUNCE_ORDER[left.highestCard] - ANNOUNCE_ORDER[right.highestCard];
+
+    return ANNOUNCEMENT_LENGTH[left.type] - ANNOUNCEMENT_LENGTH[right.type];
 }

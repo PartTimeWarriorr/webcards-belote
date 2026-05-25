@@ -46,10 +46,6 @@ export function setupSocket(server: any) {
                     player: socket.id,
                     room: room.name,
                 });
-
-                for (const p of room.players) {
-                    console.log(p);
-                }
             } else {
                 socket.emit(
                     "client:error",

@@ -19,4 +19,5 @@ export interface ServerToClientEvents {
     "game:state": (payload: PlayerView) => void;
     "game:log": (msg: string) => void;
     "game:revertMove": (card: Card) => void;
+    "game:announce": (announcement: string) => void;
 }

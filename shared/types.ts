@@ -1,91 +1,3 @@
-// export enum Suit {
-//     Hearts = "H",
-//     Clubs = "C",
-//     Diamonds = "D",
-//     Spades = "S",
-// }
-
-// export const SUIT_ORDER: Suit[] = [
-//     Suit.Clubs,
-//     Suit.Diamonds,
-//     Suit.Hearts,
-//     Suit.Spades,
-// ];
-
-// export enum Rank {
-//     Ace = "A",
-//     Seven = "7",
-//     Eight = "8",
-//     Nine = "9",
-//     Ten = "T",
-//     Jack = "J",
-//     Queen = "Q",
-//     King = "K",
-// }
-
-// export interface CardRaw {
-//     suit: Suit;
-//     rank: Rank;
-// }
-
-// export interface PlayerRaw {
-//     id: PlayerId;
-//     hand: Array<CardRaw>;
-//     team?: string;
-// }
-
-// export interface BoardState {
-//     hand?: Array<CardRaw>;
-//     cardCounts: Record<PlayerId, number>;
-//     turn: PlayerId;
-//     playedCards: Array<Play>;
-// }
-
-// export interface JoinRoomPayload {
-//     roomName: string;
-//     teamPref: string;
-// }
-
-// export interface CardPlayedPayload {
-//     playerId: PlayerId;
-//     card: CardRaw;
-// }
-
-// export interface GameModePayload {
-//     mode: GameMode;
-//     trump?: Suit;
-// }
-
-// export interface GameConfig {
-//     playerId: PlayerId;
-//     seats: Seats;
-//     teams: Record<PlayerId, string>;
-// }
-
-// export type Seats = [PlayerId, PlayerId, PlayerId, PlayerId];
-
-// export type PlayerId = string;
-
-// export enum GameMode {
-//     TRUMP,
-//     NO_TRUMP,
-//     ALL_TRUMP,
-// }
-
-// export enum Modifier {
-//     X_2 = 2,
-//     X_4 = 4,
-// }
-
-// export type Play = { player: PlayerId; card: CardRaw };
-
-// export type ModeSelection =
-//     | { mode: GameMode.TRUMP; trump: Suit; modifier?: Modifier}
-//     | { mode: GameMode.NO_TRUMP; modifier?: Modifier}
-//     | { mode: GameMode.ALL_TRUMP; modifier?: Modifier};
-
-// !!!New Types!!!
-
 export type GameState = BiddingState | PlayingState | ScoringState;
 export type BaseGameState = {
     round: RoundState;
@@ -120,6 +32,8 @@ export interface RoundState {
     trump?: Suit;
     modifier?: Modifier;
     roundScores: Scores;
+    announcementScores: Scores;
+    announcements: Record<PlayerId, Announcement[]>;
 }
 
 type PublicRoundState = Omit<RoundState, "hands" | "deck"> & {
@@ -203,9 +117,7 @@ export interface GameConfig {
     };
 }
 
-export type Result<T> =
-    | { ok: true; state: T }
-    | { ok: false; reason: string };
+export type Result<T> = { ok: true; state: T } | { ok: false; reason: string };
 
 export enum TrickStatus {
     Playing = "PLAYING",
@@ -224,3 +136,44 @@ export type RoomJoinedPayload = {
     player: PlayerId;
     room: string;
 };
+
+// Announcements
+
+export enum AnnouncementType {
+    Square = "SQUARE",
+    Tierce = "TIERCE",
+    Quarte = "QUARTE",
+    Quinte = "QUINTE",
+    Belot = "BELOT",
+}
+
+export const ANNOUNCEMENT_LENGTH: Record<AnnouncementType, number> = {
+    SQUARE: 4,
+    TIERCE: 3,
+    QUARTE: 4,
+    QUINTE: 5,
+    BELOT: 2,
+};
+
+export type Announcement =
+    | {
+          type:
+              | AnnouncementType.Tierce
+              | AnnouncementType.Quarte
+              | AnnouncementType.Quinte
+              | AnnouncementType.Belot;
+          suit: Suit;
+          highestCard: Rank;
+      }
+    | {
+          type: AnnouncementType.Square;
+          rank: SquareRank
+      };
+
+export type SquareRank =
+    | Rank.Ace
+    | Rank.King
+    | Rank.Queen
+    | Rank.Jack
+    | Rank.Ten
+    | Rank.Nine;

@@ -2,6 +2,7 @@ import { BaseGameState, BiddingState, GamePhase, PlayingState, ScoringState, Tri
 function createBaseState(): BaseGameState {
     return {
         round: {
+            announcements: {},
             dealer: "p1",
             highestBidder: null,
             deck: [],
