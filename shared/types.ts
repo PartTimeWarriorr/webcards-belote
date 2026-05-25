@@ -21,6 +21,7 @@ export interface PlayingState extends BaseGameState {
 
 export interface ScoringState extends BaseGameState {
     phase: GamePhase.Scoring;
+    condition: string;
 }
 
 export interface RoundState {

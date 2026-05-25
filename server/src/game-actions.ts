@@ -365,7 +365,7 @@ function calcScore(base: number): number {
 export function addRoundScores(
     config: GameConfig,
     state: PlayingState,
-): { scores: Scores; hanging: number } {
+): { scores: Scores; hanging: number; condition: string} {
     const newTotal = { ...state.totalScores };
     const roundScores = state.round.roundScores;
     const annScores = state.round.announcementScores;
@@ -392,6 +392,7 @@ export function addRoundScores(
                             annScores[otherTeam]) *
                             modifier,
                     ),
+                condition: "Hanging"
             };
         }
         const otherTeam = winnerTeamId === "team1" ? "team2" : "team1";
@@ -407,6 +408,7 @@ export function addRoundScores(
         return {
             scores: newTotal,
             hanging: 0,
+            condition: "Contra"
         };
     }
 
@@ -427,17 +429,19 @@ export function addRoundScores(
         return {
             scores: newTotal,
             hanging: newHangingScore,
+            condition: "Hanging"
         };
     }
 
     if (winnerTeamId === bidderTeamId) {
         // izlizame - vsichko e tochno
         const otherTeam = winnerTeamId === "team1" ? "team2" : "team1";
+        const isValat = roundScores[otherTeam] === 0;
         newTotal[winnerTeamId] +=
             calcScore(
                 roundScores[winnerTeamId] * (isNoTrump ? 2 : 1) +
                     annScores[winnerTeamId] +
-                    (roundScores[otherTeam] === 0 ? VALAT_SCORE : 0),
+                    (isValat ? VALAT_SCORE : 0),
             ) + state.hangingScore;
         newTotal[otherTeam] += calcScore(
             roundScores[otherTeam] * (isNoTrump ? 2 : 1) + annScores[otherTeam],
@@ -448,27 +452,31 @@ export function addRoundScores(
         return {
             scores: newTotal,
             hanging: newHangingScore,
+            condition: (isValat ? "Valat" : "Outside")
         };
     } else if (winnerTeamId !== bidderTeamId) {
         // vytre
+        const isValat = roundScores[bidderTeamId] === 0;
         newTotal[winnerTeamId] +=
             calcScore(
                 roundScores[winnerTeamId] * (isNoTrump ? 2 : 1) +
                     roundScores[bidderTeamId] * (isNoTrump ? 2 : 1) +
                     annScores[winnerTeamId] +
                     annScores[bidderTeamId] +
-                    (roundScores[bidderTeamId] === 0 ? VALAT_SCORE : 0),
+                    (isValat ? VALAT_SCORE : 0),
             ) + state.hangingScore;
         const newHangingScore = 0;
         return {
             scores: newTotal,
             hanging: newHangingScore,
+            condition: (isValat ? "Valat" : "Inside")
         };
     }
 
     return {
         scores: newTotal,
         hanging: 0,
+        condition: ""
     };
 }
 

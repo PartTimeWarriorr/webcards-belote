@@ -358,7 +358,7 @@ export function handleResolveTrick(
                 announcementScores: annScores,
             },
         };
-        const { scores, hanging } = addRoundScores(config, newState);
+        const { scores, hanging, condition } = addRoundScores(config, newState);
 
         return {
             ok: true,
@@ -373,6 +373,7 @@ export function handleResolveTrick(
                     team2: scores.team2,
                 },
                 hangingScore: hanging,
+                condition
             },
         };
     } else {

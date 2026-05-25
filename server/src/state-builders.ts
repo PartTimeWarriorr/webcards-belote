@@ -7,7 +7,8 @@ function createBaseState(): BaseGameState {
             highestBidder: null,
             deck: [],
             hands: {},
-            roundScores: {team1: 0, team2: 0}
+            roundScores: {team1: 0, team2: 0},
+            announcementScores: {team1: 0, team2: 0},
         },
         totalScores: {team1: 0, team2: 0},
         hangingScore: 0
@@ -42,6 +43,7 @@ export function createScoringState(overrides: Partial<ScoringState> = {}): Scori
     const base = createBaseState();
     return {
         phase: GamePhase.Scoring,
+        condition: "",
         ...base,
         ...overrides
     };
