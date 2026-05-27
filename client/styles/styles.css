@@ -263,3 +263,35 @@ body {
 input:checked+label.btn-main {
     background-color: var(--btn-main-toggle);
 }
+
+.announcements-tab {
+    color: #80808080;
+    position: absolute;
+    top: 20%;
+    left: 80%;
+    width: 15%;
+    height: 20%;
+    border: solid #80808080;
+    padding: 2rem;
+    font-size: 0.85rem;
+    overflow-y: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    z-index: 1000;
+}
+
+.debug-board {
+    color: yellow;
+    position: absolute;
+    top: 60%;
+    left: 80%;
+    width: 15%;
+    height: 30%;
+    border: solid yellow;
+    padding: 2rem;
+    font-size: 0.85rem;
+    overflow-y: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    z-index: 1000;
+}

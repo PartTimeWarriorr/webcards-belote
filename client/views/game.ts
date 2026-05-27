@@ -1,6 +1,8 @@
 import Konva from "konva";
 import { Board } from "../src/board-new";
 import {
+    Announcement,
+    AnnouncementType,
     Bid,
     Card,
     GameConfig,
@@ -101,6 +103,7 @@ export async function renderGame() {
         </div>
         <div id="winScreen" class="scoreboard-modal">
         </div>
+        <div id="announceTab" class="announcements-tab"></div>
         <div id="errors" style="color:red">Errors here</div>
         <div id="debugBoard" class="debug-board"></div>
     <div id="container"></div>
@@ -108,6 +111,7 @@ export async function renderGame() {
 
     const scoreboard = document.getElementById("scoreBoard");
     const winScreen = document.getElementById("winScreen");
+    const announceTab = document.getElementById("announceTab");
     const passButton = document.getElementById("passBtn");
     const debugBoard = document.getElementById("debugBoard");
     const biddingMenu = document.getElementById("biddingMenu");
@@ -220,6 +224,12 @@ export async function renderGame() {
             renderWinscreen(playerGameView);
         }
 
+        if (announceTab) {
+            announceTab.textContent = parseAnnounceTab(clientId, localConfig, playerGameView);
+        } else {
+            console.error("Missing announcements tab");
+        }
+
         if (debugBoard) {
             debugBoard.textContent = parseDebugInfo(
                 clientId,
@@ -290,6 +300,38 @@ function parseDebugInfo(
         ${JSON.stringify(view)} \n
         readied: ${readyPlayers}/4
     `;
+}
+
+function parseAnnounceTab(clientId: PlayerId, config: GameConfig, gameView: PlayerView) {
+    const team1 = config.teams.team1; 
+    const team2 = config.teams.team2;
+    const ownTeam = team1.includes(clientId) ? "team1" : (team2.includes(clientId) ? "team2" : ""); 
+
+    return `
+        Team 1: \n
+        ${team1[0]}: ${gameView.round.announcements[team1[0]!].map(a => parseAnnouncement(a, "team1" === ownTeam)).join(', ')} \n
+        ${team1[1]}: ${gameView.round.announcements[team1[1]!].map(a => parseAnnouncement(a, "team1" === ownTeam)).join(', ')} \n
+
+        Team 2: \n
+        ${team2[0]}: ${gameView.round.announcements[team2[0]!].map(a => parseAnnouncement(a, "team2" === ownTeam)).join(', ')} \n
+        ${team2[1]}: ${gameView.round.announcements[team2[1]!].map(a => parseAnnouncement(a, "team2" === ownTeam)).join(', ')} \n
+    `;
+}
+
+function parseAnnouncement(announcement: Announcement, ownTeam: boolean) {
+    switch(announcement.type) {
+        case AnnouncementType.Square: {
+            return ownTeam ? `Square ${announcement.rank}` : "Square"
+        } 
+        case AnnouncementType.Tierce:
+        case AnnouncementType.Quarte:
+        case AnnouncementType.Quinte: {
+            return ownTeam ? `${announcement.type} ${announcement.suit} up to ${announcement.highestCard}` : `${announcement.type}`;
+        }
+        case AnnouncementType.Belot: {
+            return `${announcement.type} ${announcement.suit}`;
+        }
+    }
 }
 
 function renderScoreboard(gameView: PlayerView) {
@@ -398,3 +440,5 @@ function renderWinscreen(gameView: PlayerView) {
         roomReady(isReady);
     });
 }
+
+
