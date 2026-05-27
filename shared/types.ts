@@ -1,4 +1,4 @@
-export type GameState = BiddingState | PlayingState | ScoringState;
+export type GameState = BiddingState | PlayingState | ScoringState | FinishedState;
 export type BaseGameState = {
     round: RoundState;
     totalScores: Scores;
@@ -24,6 +24,12 @@ export interface ScoringState extends BaseGameState {
     condition: string;
 }
 
+export interface FinishedState extends BaseGameState {
+    phase: GamePhase.Finished;
+    winningTeam: TeamId;
+    condition: string;
+}
+
 export interface RoundState {
     dealer: PlayerId;
     highestBidder: PlayerId | null;
@@ -42,14 +48,11 @@ type PublicRoundState = Omit<RoundState, "hands" | "deck"> & {
     numCards: Record<string, number>;
 };
 
-// export type PlayerView = Omit<GameState, "round"> & {
-//     round: PublicRoundState;
-// };
-
 export type PlayerView =
     | (Omit<BiddingState, "round"> & { round: PublicRoundState })
     | (Omit<PlayingState, "round"> & { round: PublicRoundState })
-    | (Omit<ScoringState, "round"> & { round: PublicRoundState });
+    | (Omit<ScoringState, "round"> & { round: PublicRoundState })
+    | (Omit<FinishedState, "round"> & { round: PublicRoundState });
 
 export type PlayerId = string;
 export type PlayerSlot = PlayerId | null;
@@ -102,7 +105,7 @@ export enum GamePhase {
     Bidding = "BIDDING",
     Playing = "PLAYING",
     Scoring = "SCORING",
-    Ended = "ENDED",
+    Finished = "FINISHED",
 }
 
 export enum Modifier {

@@ -85,7 +85,7 @@ export async function renderGame() {
     // stage.scale({ x: scale, y: scale });
 
     const app = document.getElementById("app")!;
-        app.innerHTML = `
+    app.innerHTML = `
         <div id="biddingMenu" class="gamemode-modal">
             <div class="mode-btn btn-club" name="C"></div>
             <div class="mode-btn btn-diamond" name="D"></div>
@@ -99,12 +99,15 @@ export async function renderGame() {
         </div>
         <div id="scoreBoard" class="scoreboard-modal">
         </div>
+        <div id="winScreen" class="scoreboard-modal">
+        </div>
         <div id="errors" style="color:red">Errors here</div>
         <div id="debugBoard" class="debug-board"></div>
     <div id="container"></div>
         `;
 
     const scoreboard = document.getElementById("scoreBoard");
+    const winScreen = document.getElementById("winScreen");
     const passButton = document.getElementById("passBtn");
     const debugBoard = document.getElementById("debugBoard");
     const biddingMenu = document.getElementById("biddingMenu");
@@ -188,7 +191,6 @@ export async function renderGame() {
         }
         board.render(localConfig?.players, playerGameView);
 
-
         if (biddingMenu) {
             biddingMenu.style.display =
                 playerGameView.phase === GamePhase.Bidding &&
@@ -206,8 +208,16 @@ export async function renderGame() {
             console.error("Missing scoreboard");
         }
 
+        if (winScreen) {
+            winScreen.style.display = playerGameView.phase === GamePhase.Finished ? "block" : "none";
+        } else {
+            console.error("Missing win screen");
+        }
+
         if (playerGameView.phase === GamePhase.Scoring) {
-            renderScoreboard(playerGameView.totalScores);
+            renderScoreboard(playerGameView);
+        } else if (playerGameView.phase === GamePhase.Finished) {
+            renderWinscreen(playerGameView);
         }
 
         if (debugBoard) {
@@ -222,13 +232,13 @@ export async function renderGame() {
     });
 
     roomReadied((readyPlayers: PlayerId[]) => {
-        if (!clientId || !localConfig || !playerGameView) return; 
+        if (!clientId || !localConfig || !playerGameView) return;
         if (debugBoard) {
             debugBoard.textContent = parseDebugInfo(
                 clientId,
                 localConfig,
                 playerGameView,
-                readyPlayers.length
+                readyPlayers.length,
             );
         } else {
             console.error("Missing debug board");
@@ -282,35 +292,109 @@ function parseDebugInfo(
     `;
 }
 
-function renderScoreboard(scores: Scores) {
+function renderScoreboard(gameView: PlayerView) {
     const scoreboard = document.getElementById("scoreBoard")!;
 
+    if (gameView.phase !== GamePhase.Scoring) return;
     scoreboard.innerHTML = `
+                <p class="scoreboard-title">Total scores</p>
+                <div class="scores-grid">
+                    <div class="scores-column">
+                        <div class="scoreboard-subtitle">Team 1</div>
+                        <div>${gameView.totalScores.team1}</div>
+                    </div>
+                    <div class="scores-column">
+                        <div class="scoreboard-subtitle">Team 2</div>
+                        <div>${gameView.totalScores.team2}</div>
+                    </div>
+                </div>
+
                 <p class="scoreboard-title">
-                    Scores
+                Round scores
                 </p>
-                <p class="scoreboard-subtitle">
-                    Team1
-                </p>
+                <p class="scoreboard-title">${gameView.condition}</p>
+                <p class="scoreboard-subtitle">Team1</p>
                 <p class="scoreboard-text">
-                    From cards: ${scores.team1}<br> 
+                    From cards: ${gameView.round.roundScores.team1}<br />
                     From announcements:
+                    ${gameView.round.announcementScores.team2}
                 </p>
-                <p class="scoreboard-subtitle">
-                    Team2
-                </p>
+                <p class="scoreboard-subtitle">Team2</p>
                 <p class="scoreboard-text">
-                    From cards: ${scores.team2}<br>
+                    From cards: ${gameView.round.roundScores.team2}<br />
                     From announcements:
+                    ${gameView.round.announcementScores.team2}
                 </p>
-                <input type="checkbox" name="readyButton" id="readyButton" class="hidden">
-                <label for="readyButton" class="scoreboard-button btn-main">Ready</label>
+                <input
+                    type="checkbox"
+                    name="readyButton"
+                    id="readyButton"
+                    class="hidden"
+                />
+                <label for="readyButton" class="scoreboard-button btn-main"
+                    >Ready</label
+                >
     `;
 
-    const readyButton: HTMLInputElement = scoreboard.querySelector('#readyButton')!;
+    const readyButton: HTMLInputElement =
+        scoreboard.querySelector("#readyButton")!;
 
-    readyButton.addEventListener('click', () => {
+    readyButton.addEventListener("click", () => {
         const isReady = readyButton.checked;
-        roomReady(isReady); 
+        roomReady(isReady);
+    });
+}
+
+function renderWinscreen(gameView: PlayerView) {
+    const winScreen = document.getElementById("winScreen")!;
+
+    if (gameView.phase !== GamePhase.Finished) return;
+
+    winScreen.innerHTML = `
+                <p class="scoreboard-title">${gameView.winningTeam} wins!</p>
+                <div class="scores-grid">
+                    <div class="scores-column">
+                        <div class="scoreboard-subtitle">Team 1</div>
+                        <div>${gameView.totalScores.team1}</div>
+                    </div>
+                    <div class="scores-column">
+                        <div class="scoreboard-subtitle">Team 2</div>
+                        <div>${gameView.totalScores.team2}</div>
+                    </div>
+                </div>
+
+                <p class="scoreboard-title">
+                Round scores
+                </p>
+                <p class="scoreboard-title">${gameView.condition}</p>
+                <p class="scoreboard-subtitle">Team1</p>
+                <p class="scoreboard-text">
+                    From cards: ${gameView.round.roundScores.team1}<br />
+                    From announcements:
+                    ${gameView.round.announcementScores.team2}
+                </p>
+                <p class="scoreboard-subtitle">Team2</p>
+                <p class="scoreboard-text">
+                    From cards: ${gameView.round.roundScores.team2}<br />
+                    From announcements:
+                    ${gameView.round.announcementScores.team2}
+                </p>
+                <input
+                    type="checkbox"
+                    name="readyButton"
+                    id="readyButton"
+                    class="hidden"
+                />
+                <label for="readyButton" class="scoreboard-button btn-main"
+                    >Ready</label
+                >
+    `;
+
+    const readyButton: HTMLInputElement =
+        winScreen.querySelector("#readyButton")!;
+
+    readyButton.addEventListener("click", () => {
+        const isReady = readyButton.checked;
+        roomReady(isReady);
     });
 }

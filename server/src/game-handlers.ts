@@ -20,6 +20,7 @@ import {
     dealFinal,
     dealInitial,
     findAnns,
+    getGameWinner,
     getNextPlayer,
     getNextToBid,
     getTrickWinner,
@@ -97,23 +98,23 @@ export function handlePass(
                 modifier: state.highestBid?.[1].modifier,
                 roundScores: { team1: 0, team2: 0 },
             },
-            currentPlayer: getNextPlayer(
-                config.players,
-                state.round.dealer,
-            ),
+            currentPlayer: getNextPlayer(config.players, state.round.dealer),
             trickStatus: TrickStatus.Playing,
             plays: [],
-        }
+        };
 
-        const announcements =  tempState.round.mode === GameMode.NO_TRUMP ? {} : findAnns(config, tempState);
+        const announcements =
+            tempState.round.mode === GameMode.NO_TRUMP
+                ? {}
+                : findAnns(config, tempState);
         return {
             ok: true,
             state: {
                 ...tempState,
                 round: {
                     ...tempState.round,
-                    announcements: announcements
-                }
+                    announcements: announcements,
+                },
             },
         };
     }
@@ -129,7 +130,7 @@ export function handlePass(
                 deck: shuffle(),
                 hands: {},
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 }
+                announcementScores: { team1: 0, team2: 0 },
             },
             totalScores: state.totalScores,
             hangingScore: state.hangingScore,
@@ -191,7 +192,7 @@ export function handlePlay(
     if (!validMove.ok) {
         return {
             ok: false,
-            reason: `Cannot play: ${validMove.reason}`
+            reason: `Cannot play: ${validMove.reason}`,
         };
     }
 
@@ -245,9 +246,10 @@ export function handleStartNewRound(
 ): Result<GameState> {
     if (!state) {
         // Is first round of the game
-        const dealer = config.players[Math.floor(Math.random() * config.players.length)];
+        const dealer =
+            config.players[Math.floor(Math.random() * config.players.length)];
 
-        const tempState : BiddingState = {
+        const tempState: BiddingState = {
             phase: GamePhase.Bidding,
             round: {
                 announcements: {},
@@ -255,10 +257,10 @@ export function handleStartNewRound(
                 highestBidder: null,
                 deck: shuffle(),
                 hands: {},
-                roundScores: {team1: 0, team2: 0},
-                announcementScores:  { team1: 0, team2: 0 }
+                roundScores: { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
-            totalScores: {team1: 0, team2: 0},
+            totalScores: { team1: 0, team2: 0 },
             hangingScore: 0,
             highestBid: null,
             currentBidder: getNextPlayer(config.players, dealer),
@@ -275,7 +277,7 @@ export function handleStartNewRound(
             },
         };
         return {
-            ok: true, 
+            ok: true,
             state: state,
         };
     } else {
@@ -285,7 +287,7 @@ export function handleStartNewRound(
                 ok: false,
                 reason: "Game is not in scoring phase.",
             };
-            
+
         if (!isRoundFinished(state)) {
             return {
                 ok: false,
@@ -303,7 +305,7 @@ export function handleStartNewRound(
                 deck: shuffle(),
                 hands: {},
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 }
+                announcementScores: { team1: 0, team2: 0 },
             },
             totalScores: state.totalScores,
             hangingScore: state.hangingScore,
@@ -348,7 +350,12 @@ export function handleResolveTrick(
     const trickWinner = getTrickWinner(state);
 
     if (isRoundOver) {
-        const newRoundScores = addTrickScores(config, state, trickWinner, isRoundOver);
+        const newRoundScores = addTrickScores(
+            config,
+            state,
+            trickWinner,
+            isRoundOver,
+        );
         const annScores = calcAnnScores(config, state);
         const newState = {
             ...state,
@@ -359,25 +366,51 @@ export function handleResolveTrick(
             },
         };
         const { scores, hanging, condition } = addRoundScores(config, newState);
+        const winner = getGameWinner(scores);
 
-        return {
-            ok: true,
-            state: {
-                phase: GamePhase.Scoring,
-                round: {
-                    ...state.round,
-                    roundScores: newRoundScores,
+        if (winner && condition !== "Valat") {
+            return {
+                ok: true,
+                state: {
+                    phase: GamePhase.Finished,
+                    round: {
+                        ...state.round,
+                        roundScores: newRoundScores,
+                    },
+                    totalScores: {
+                        team1: scores.team1,
+                        team2: scores.team2,
+                    },
+                    hangingScore: hanging,
+                    winningTeam: winner,
+                    condition,
                 },
-                totalScores: {
-                    team1: scores.team1,
-                    team2: scores.team2,
+            };
+        } else {
+            return {
+                ok: true,
+                state: {
+                    phase: GamePhase.Scoring,
+                    round: {
+                        ...state.round,
+                        roundScores: newRoundScores,
+                    },
+                    totalScores: {
+                        team1: scores.team1,
+                        team2: scores.team2,
+                    },
+                    hangingScore: hanging,
+                    condition,
                 },
-                hangingScore: hanging,
-                condition
-            },
-        };
+            };
+        }
     } else {
-        const newRoundScores = addTrickScores(config, state, trickWinner, isRoundOver);
+        const newRoundScores = addTrickScores(
+            config,
+            state,
+            trickWinner,
+            isRoundOver,
+        );
         return {
             ok: true,
             state: {

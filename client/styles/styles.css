@@ -231,6 +231,7 @@ body {
 .scoreboard-text {
     width: 90%;
     margin: auto;
+    padding: 1rem;
     overflow-wrap: break-word;
     text-align: left;
 }
@@ -242,6 +243,15 @@ body {
     margin: 0.5rem;
     padding: 1rem;
     font-size: 1.2rem;
+}
+
+.scores-grid {
+    display: grid;
+    grid-template-columns: auto auto;
+}
+
+.scores-column {
+    padding: 2rem;
 }
 
 .hidden {

@@ -29,6 +29,7 @@ import {
     ALL_TRUMP_SCORE,
     ANNOUNCE_ORDER,
     NO_TRUMP_SCORE,
+    TARGET_SCORE,
     VALAT_SCORE,
 } from "./game-rules";
 
@@ -807,4 +808,20 @@ export function sortHandsAsc(
 
 export function getCardsOfSuit(cards: Card[], suit: Suit): Card[] {
     return cards.filter((c) => c.suit === suit);
+}
+
+export function getGameWinner(scores: Scores): TeamId | undefined {
+    const team1Reached = scores.team1 >= TARGET_SCORE;
+    const team2Reached = scores.team2 >= TARGET_SCORE;
+
+    if (!team1Reached && !team2Reached) 
+        return undefined;
+
+    if (scores.team1 > scores.team2)
+        return "team1";
+
+    if (scores.team2 > scores.team1)
+        return "team2";
+
+    return undefined;
 }

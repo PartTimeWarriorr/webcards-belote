@@ -64,3 +64,4 @@ export const ANNOUNCE_ORDER: Record<Rank, number> = {
 };
 
 export const VALAT_SCORE = 90;
+export const TARGET_SCORE = 151;

@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { FullTeam, GameConfig, GameState, PlayerId, Seats, Team, TeamId } from "@shared/types";
+import { FullTeam, GameConfig, GamePhase, GameState, PlayerId, Seats, Team, TeamId } from "@shared/types";
 
 export class Room {
     name: string;
@@ -31,6 +31,11 @@ export class Room {
         return this.game.getState();
     }
 
+    isGameFinished(): boolean {
+        if (!this.game) throw new Error("No game started");
+        return this.game.getState().phase === GamePhase.Finished;
+    }
+
     getGameConfig(): GameConfig {
         return {
             players: this.orderedSeats(),
@@ -52,6 +57,11 @@ export class Room {
         const config : GameConfig = this.getGameConfig();
         this.game = new Game(config);
     } 
+
+    initRematch() {
+        // this.game stash history to DB
+        this.initGame();
+    }
 
     isFull() {
         return this.players.size === 4;

@@ -118,6 +118,15 @@ export function setupSocket(server: any) {
                     socket.emit("client:error", "No game started");
                     return;
                 }
+
+                if (room.isGameFinished()) {
+                    room.initRematch();
+                    const state = room.getGameState();
+                    const config = room.getGameConfig();
+                    broadCastGameInit(io, state, config, room);
+                    return;
+                }
+
                 const result = room.game.applyMove({type: "START_NEW_ROUND"});
                 if (result.ok) {
                     broadCastGameState(io, result.state, room);
@@ -183,7 +192,6 @@ function broadCastGameInit(
 }
 
 function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
-    // const playerHand = state.round.hands[player];
     const { hands, deck, ...publicRound } = state.round;
     const playerHand = hands[player];
     const numCards: Record<string, number> = Object.fromEntries(
