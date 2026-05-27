@@ -31,7 +31,7 @@ import {
     isSameTeam,
     sortHandsAsc,
     sortHandsDesc,
-} from "./game-actions";
+} from "./card-actions";
 import { Game } from "./game";
 import { suite } from "node:test";
 
@@ -124,7 +124,7 @@ describe("Test pass handler", () => {
                 deck: [],
                 hands: { p1: [], p2: [], p3: [], p4: [] },
                 roundScores: { team1: 6, team2: 7 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
         });
         const result = handlers.handlePass(MOCK_CONFIG, state, "p4");
@@ -281,7 +281,7 @@ describe("Playtest", () => {
                 dealer: "a",
                 highestBidder: null,
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
                 mode: GameMode.ALL_TRUMP,
             },
         });
@@ -304,7 +304,7 @@ describe("Playtest", () => {
                 dealer: "a",
                 highestBidder: null,
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
                 mode: GameMode.ALL_TRUMP,
             },
         });
@@ -338,7 +338,7 @@ describe("Playtest", () => {
                 dealer: "a",
                 highestBidder: null,
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
                 mode: GameMode.ALL_TRUMP,
             },
         });
@@ -373,7 +373,7 @@ describe("Playtest", () => {
                 },
                 dealer: "a",
                 highestBidder: null,
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
                 roundScores: { team1: 0, team2: 0 },
                 mode: GameMode.TRUMP,
                 trump: Suit.Spades,
@@ -405,7 +405,7 @@ describe("Playtest", () => {
                 deck: [],
                 hands: { p1: [], p2: [], p3: [], p4: [] },
                 roundScores: { team1: 6, team2: 7 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
         });
 
@@ -441,7 +441,7 @@ describe("Scoring Phase", () => {
                     p4: [{ rank: Rank.Queen, suit: Suit.Spades }],
                 },
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
         });
 
@@ -482,7 +482,7 @@ describe("Scoring Phase", () => {
                 deck: [],
                 hands: { p1: [], p2: [], p3: [], p4: [] },
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
         });
 
@@ -540,7 +540,7 @@ describe("Announcements", () => {
                 },
                 roundScores: { team1: 0, team2: 0 },
                 announcements: {},
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
             },
         });
 
@@ -585,7 +585,7 @@ describe("Announcements", () => {
                     p4: [],
                 },
                 roundScores: { team1: 0, team2: 0 },
-                announcementScores:  { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
                 announcements: {},
             },
         });
@@ -605,8 +605,8 @@ describe("Announcements", () => {
             {
                 type: AnnouncementType.Tierce,
                 suit: Suit.Spades,
-                highestCard: Rank.Nine
-            }
+                highestCard: Rank.Nine,
+            },
         ];
         expect(anns["p1"]).toContainEqual(correct);
         expect(anns["p2"]).toStrictEqual(correct2);

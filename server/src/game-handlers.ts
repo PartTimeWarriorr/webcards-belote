@@ -10,24 +10,13 @@ import {
 } from "@shared/types";
 import { Bid, Card, GameConfig, GamePhase } from "@shared/types";
 import { higherBid } from "./compare";
-import {
-    addRoundScores,
-    addTrickScores,
-    allButBidderPassed,
-    allPassed,
-    calcAnnScores,
-    canPlay,
-    dealFinal,
-    dealInitial,
-    findAnns,
-    getGameWinner,
-    getNextPlayer,
-    getNextToBid,
-    getTrickWinner,
-    hasCard,
-    isRoundFinished,
-    shuffle,
-} from "./game-actions";
+import { addRoundScores, addTrickScores, getGameWinner } from "./scoring";
+import { allButBidderPassed, allPassed, isRoundFinished } from "./transitions";
+import { calcAnnScores } from "./scoring";
+import { findAnns } from "./announcements";
+import { getTrickWinner, hasCard, canPlay } from "./play-rules";
+import { dealFinal, dealInitial, shuffle} from "./card-actions";
+import { getNextPlayer, getNextToBid } from "./player-utils";
 
 export function handleBid(
     config: GameConfig,

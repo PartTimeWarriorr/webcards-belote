@@ -1,12 +1,9 @@
 import {
-    GameState,
-    PlayerId,
-    Card,
-    Play,
-    GameMode,
-    Suit,
     Rank,
 } from "@shared/types";
+
+export const VALAT_SCORE = 90;
+export const TARGET_SCORE = 151;
 
 export const ALL_TRUMP_POWER: Record<Rank, number> = {
     J: 8,
@@ -62,6 +59,3 @@ export const ANNOUNCE_ORDER: Record<Rank, number> = {
     "8": 2,
     "7": 1
 };
-
-export const VALAT_SCORE = 90;
-export const TARGET_SCORE = 151;
