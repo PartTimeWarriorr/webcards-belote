@@ -1,4 +1,4 @@
-import { Game } from "./game";
+import { Game } from "./game-core/game";
 import { FullTeam, GameConfig, GamePhase, GameState, PlayerId, Seats, Team, TeamId } from "@shared/types";
 
 export class Room {

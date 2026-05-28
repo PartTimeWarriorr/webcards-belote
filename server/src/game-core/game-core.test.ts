@@ -3,10 +3,8 @@ import {
     Announcement,
     AnnouncementType,
     Bid,
-    GameConfig,
     GameMode,
     GamePhase,
-    GameState,
     Modifier,
     Rank,
     Suit,
@@ -16,24 +14,15 @@ import {
     createBiddingState,
     createPlayingState,
     createScoringState,
-} from "./state-builders";
+} from "./helpers/state-builders";
 import * as handlers from "./game-handlers";
 import { compareCardsPower, higherBid } from "./compare";
-import {
-    addTrickScores,
-    dealFinal,
-    dealInitial,
-    findAnns,
-    getCardsOfSuit,
-    getHighestPlayOfSuit,
-    getTrickWinner,
-    hasHigherSameSuit,
-    isSameTeam,
-    sortHandsAsc,
-    sortHandsDesc,
-} from "./card-actions";
 import { Game } from "./game";
 import { MOCK_CONFIG } from "./constants";
+import { getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit } from "./play-rules";
+import { isSameTeam } from "./player-utils";
+import { getCardsOfSuit, sortHandsAsc } from "./card-actions";
+import { findAnns } from "./announcements";
 
 
 describe("Test bid handler", () => {
@@ -548,7 +537,7 @@ describe("Announcements", () => {
             { rank: Rank.King, suit: Suit.Spades },
         ];
 
-        const hands = sortHandsAsc(MOCK_CONFIG, state);
+        const hands = sortHandsAsc(MOCK_CONFIG, state.round.hands);
         expect(correct).toEqual(hands["p1"]);
     });
     test("Finding announcements 1", () => {

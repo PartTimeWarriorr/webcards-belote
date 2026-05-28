@@ -18,7 +18,6 @@ import {
 import { Room } from "./room";
 
 const roomManager = new RoomManager();
-
 const logger = new ServerLogger();
 
 export function setupSocket(server: any) {
