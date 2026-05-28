@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { BoardState, CardRaw, PlayerId, Seats } from "../../shared/types.js";
+import { BoardState, CardRaw, Play, PlayerId, Seats } from "../../shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
@@ -52,19 +52,36 @@ export class Board {
     cardCounts: Record<PlayerId, number> = {};
     playedCards: Record<PlayerId, CardRaw> = {};
 
-    constructor(
+    handObjects = new Map<string, CardObject>();
+    fieldCards = new Map<PlayerId, CardObject>();
+    oppHands = new Map<PlayerId, CardObject[]>();
+
+    private constructor(
         layer: Konva.Layer,
         dragLayer: Konva.Layer,
         stage: Konva.Stage,
+        builder: CardBuilder
     ) {
         this.layer = layer;
         this.dragLayer = dragLayer;
         this.stage = stage;
+        this.builder = builder;
 
         this.loadPlayField();
 
         this.stage.add(this.layer);
         this.stage.add(this.dragLayer);
+    }
+
+    static async init(
+        layer: Konva.Layer,
+        dragLayer: Konva.Layer,
+        stage: Konva.Stage,
+    ) {
+        const builder = new CardBuilder(IMAGE_SCALE);
+        await builder.ready;
+
+        return new Board(layer, dragLayer, stage, builder);
     }
 
     loadPlayField() {
@@ -78,6 +95,65 @@ export class Board {
 
         this.layer.add(field);
     }
+
+    async load(boardState: BoardState, seats: Seats) {
+        if (!boardState.hand) return;
+        this.dealHand(boardState.hand, SEAT_POSITIONS[0].pos);
+    }
+
+    removeCardObject(cardId: string) {
+        const card = this.handObjects?.get(cardId);
+        if (card) card.destroy();
+        this.handObjects?.delete(cardId);
+    }
+
+    async putCard(pid: PlayerId, cardObj: CardObject) {
+        this.fieldCards.set(pid, cardObj);
+    }
+
+    async dealHand(hand: Array<CardRaw>, initPos: Vector2d) {
+        this.handObjects = new Map<string, CardObject>();
+
+        for (const [index, card] of hand.entries()) {
+            const cardObject: CardObject = await this.builder.buildFrontCard(
+                card,
+                initPos,
+                {
+                    draggable: true,
+                    dragOptions: {
+                        stage: this.stage,
+                        dragLayer: this.dragLayer,
+                        isValidDrop: (pos) => {
+                            const shape = this.layer.getIntersection(pos);
+                            return shape?.getAttr("name") === "PlayField";
+                        },
+                        onValidDrop: (card, obj) => {
+                            playCard(card, (success: boolean) => {
+                                if (success) {
+                                    // obj.draggable(false);
+                                    // obj.setPosition(SOUTH);
+                                    // obj.destroy();
+                                    // this.handObjects?.delete()
+                                    // this.removeCardObject(obj.id());
+                                } else {
+                                    obj.setPosition(obj.dragStart);
+                                }
+                            });
+                        }
+                    }
+                }
+            );
+
+            const v: Vector2d = {
+                x: initPos.x + SPACE * index,
+                y: window.innerHeight - cardObject.getHeight(),
+            };
+            cardObject.setPosition(v);
+
+            this.layer.add(cardObject);
+            this.handObjects.set(cardObject.id(), cardObject);
+        }
+    } 
 
     async render(boardState: BoardState, seats: Seats) {
         if (boardState.hand) {

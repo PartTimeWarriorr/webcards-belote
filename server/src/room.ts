@@ -1,93 +1,153 @@
-import { GameEngine } from "./game-engine";
-import { Player } from "./player";
-import { Team } from "./team";
-import { GameMode,  PlayerId, Seats } from "@shared/types";
-
-const TEAM_NAMES : string[] = ["blue", "yellow"]
-
-function isTeamName(team: string) : boolean {
-    return TEAM_NAMES.includes(team);
-}
+import { Game } from "./game-core/game";
+import { FullTeam, GameConfig, GamePhase, GameState, PlayerId, Seats, Team, TeamId } from "@shared/types";
 
 export class Room {
     name: string;
-    blueTeam: Team = new Team();
-    yellowTeam: Team = new Team();
-    players: Map<string, Player> = new Map();
+    players: Set<PlayerId> = new Set();
+    team1: Team = [null, null];
+    team2: Team = [null, null];
 
-    gameEngine?: GameEngine;
+    game?: Game;
+
+    readyPlayers: Set<PlayerId> = new Set();
+
+    ready(player: PlayerId) {
+        if (!this.players.has(player)) throw new Error("Player is not in this room");
+        this.readyPlayers.add(player);
+    }
+
+    unready(player: PlayerId) {
+        if (!this.players.has(player)) throw new Error("Player is not in this room");
+        this.readyPlayers.delete(player);
+    }
+
+    allReady(): boolean {
+        return this.readyPlayers.size === 4;
+    }
+
+    getGameState(): GameState {
+        if (!this.game) throw new Error("No game currently started");
+
+        return this.game.getState();
+    }
+
+    isGameFinished(): boolean {
+        if (!this.game) throw new Error("No game started");
+        return this.game.getState().phase === GamePhase.Finished;
+    }
+
+    getGameConfig(): GameConfig {
+        return {
+            players: this.orderedSeats(),
+            teams: {
+                team1: this.team1,
+                team2: this.team2
+            }
+        }
+    }
 
     constructor(name: string) {
         this.name = name;
     }
 
-    startGame(mode: GameMode) {
-        this.gameEngine = new GameEngine(mode, this.getSeats());
+    initGame() {
+        if (!this.isReady()) 
+            throw new Error("Room isn't ready");
+
+        const config : GameConfig = this.getGameConfig();
+        this.game = new Game(config);
+    } 
+
+    initRematch() {
+        // this.game stash history to DB
+        this.initGame();
     }
 
-    join(player: Player, teamPref: "blue" | "yellow") : boolean {
+    isFull() {
+        return this.players.size === 4;
+    }
+
+    isReady(): this is {
+        team1: FullTeam,
+        team2: FullTeam
+    } {
+        return this.team1.every(Boolean) && this.team2.every(Boolean);
+    }
+
+    private orderedSeats() : Seats {
+        if (!this.isReady()) 
+            throw new Error("Room isn't ready");
+
+        return [
+            this.team1[0],
+            this.team2[0],
+            this.team1[1],
+            this.team2[1],
+        ];
+    }
+
+    join(player: PlayerId): boolean {
         if (this.isFull()) {
-            console.log(`Player ${player.id}: Room ${this.name} is full`);
+            console.log(`Player ${player} cannot join full room ${this.name}`);
             return false;
         }
 
-        const teamJoined = this.joinTeam(player.id, teamPref);
-        if (!teamJoined) return false;
+        this.players.add(player);
+        console.log(`Player ${player} joined room ${this.name}`);
 
-        this.players.set(player.id, player);
-        console.log(`Player ${player.id} joined room ${this.name}`);
         return true;
     }
 
-    leave(pid: PlayerId) {
-        if (this.players.delete(pid)) {
-            console.log(`Player ${pid} has left room ${this.name}`);
+    leave(player: PlayerId) {
+        if (this.players.delete(player)) {
+            console.log(`Player ${player} has left room ${this.name}`);
+            const team = this.getPlayerTeam(player);
+            if (!team) throw new Error("Player not in any team");
+            this.leaveTeam(player, team);
         }
         else {
             throw new Error("No such player in room");
         }
     }
 
-    private joinTeam(pid: PlayerId, teamPref: "blue" | "yellow") : boolean {
-        if (!isTeamName(teamPref)) {
-            throw new Error("No such team");
+    leaveTeam(player: PlayerId, team: TeamId) {
+        const index = this[team].findIndex(i => i === player);
+        if (index === -1) return;
+        this[team][index] = null;
+    }
+
+    getPlayerTeam(player: PlayerId): TeamId | undefined {
+        if (this.team1.includes(player)) {
+            return "team1";
+        } else if (this.team2.includes(player)) {
+            return "team2";
+        } else {
+            console.log("Player not in any team");
+        }
+    }
+
+    joinTeam(player: PlayerId, team: TeamId): boolean {
+        if (this.teamFull(team)) {
+            console.log(`Player ${player} cannot join full team ${team} in room ${this.name}`);
+            return false;
         }
 
-        const { team, altTeam } = this.getTeams(teamPref);
-        const joined = team.join(pid) || altTeam.join(pid);
-
-        if (!joined) {
-            console.log(`Player ${pid} could not join any team`);
-        }
-
-        return joined;
+        const index = this[team].findIndex(i => i === null);
+        this[team][index] = player;
+        return true;
     }
 
-    private getTeams(teamName: "blue" | "yellow") : { team: Team, altTeam: Team } {
-        if (teamName === "blue") {
-            return { team: this.blueTeam, altTeam: this.yellowTeam };
-        } else if (teamName === "yellow") {
-            return { team: this.yellowTeam, altTeam: this.blueTeam };
-        }
-        throw new Error("No such team name");
+    joinRandomTeams() {
+        const teams = ["team1", "team1", "team2", "team2"];
+        teams.sort(() => Math.random() - 0.5);
+
+        this.players.forEach(p => {
+            const next = teams.splice(0, 1);
+            this.joinTeam(p, next[0] as TeamId);
+        });
     }
 
-    isFull() : boolean {
-        return this.blueTeam.isFull() && this.yellowTeam.isFull();
-    }
-
-    getPlayerTeam(playerId: PlayerId) : "blue" | "yellow" {
-        if(this.blueTeam.includes(playerId)) return "blue";
-        if(this.yellowTeam.includes(playerId)) return "yellow";
-
-        throw new Error(`Player ${playerId} is not in any team`);
-    }
-
-    getSeats() : Seats {
-        return [ this.blueTeam.slots[0]!, this.yellowTeam.slots[0]!, this.blueTeam.slots[1]!, this.yellowTeam.slots[1]! ];
-    } 
-
-    getAllPlayerIds() : Array<PlayerId> {
-        return Array.from(this.players.keys());
+    teamFull(team: TeamId): boolean {
+        return this[team][0] !== null && this[team][1] !== null;
     }
 }

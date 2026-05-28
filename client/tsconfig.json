@@ -8,10 +8,11 @@
         "lib": ["DOM", "ES2020"], // Browser APIs
         "noEmit": true, // Vite handles output
         "baseUrl": ".", // For path aliases
+        "ignoreDeprecations": "6.0", // !!
         "paths": {
             "@/*": ["src/*"],
             "@shared/*": ["../shared/*"]
         }
     },
-    "include": ["src", "views/Game.ts", "views/Home.ts"]
+    "include": ["src/", "views/"]
 }

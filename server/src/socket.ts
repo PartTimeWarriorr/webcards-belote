@@ -1,22 +1,29 @@
-import { Server } from "socket.io";
-import { Player } from "./player";
+import { RoomManager } from "./room-manager";
 import {
-    CardRaw,
-    GameMode,
-} from "@shared/types";
-import type {
-    ServerToClientEvents,
     ClientToServerEvents,
-} from "@shared/events";
+    ServerToClientEvents,
+} from "../../shared/events";
 import { instrument } from "@socket.io/admin-ui";
+import { ServerLogger } from "./server-log";
+import { Server } from "socket.io";
+import {
+    GameConfig,
+    GamePhase,
+    GameState,
+    Move,
+    PlayerId,
+    PlayerView,
+    TrickStatus,
+} from "@shared/types";
 import { Room } from "./room";
 
-const room = new Room("Game_1");
+const roomManager = new RoomManager();
+const logger = new ServerLogger();
 
 export function setupSocket(server: any) {
     const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
         cors: {
-            origin: ["https://admin.socket.io"],
+            origin: ["https://localhost:5173", "https://admin.socket.io"],
             credentials: true,
         },
     });
@@ -28,120 +35,179 @@ export function setupSocket(server: any) {
     io.on("connection", (socket) => {
         socket.emit("welcome", socket.id);
 
-        const joined = room.join(new Player(socket.id), "blue");
-        if (joined) socket.join(room.name);
+        socket.on("room:join", (roomId) => {
+            const room = roomManager.getRoom(roomId);
+            const joined = room.join(socket.id);
 
-        if (room.isFull()) {
-            console.log("Room is now full");
-            const playerIds = room.getAllPlayerIds();
-            const seats = room.getSeats();
-            const teams = playerIds.reduce(
-                (acc, pid) => {
-                    acc[pid] = room.getPlayerTeam(pid);
-                    return acc;
-                },
-                {} as Record<string, string>,
-            );
-
-            playerIds.forEach((pid) => {
-                io.to(pid).emit("startGame", {
-                    playerId: pid,
-                    seats,
-                    teams,
+            if (joined) {
+                socket.join(room.name);
+                io.to(room.name).emit("room:joined", {
+                    player: socket.id,
+                    room: room.name,
                 });
-            });
+            } else {
+                socket.emit(
+                    "client:error",
+                    "Couldn't join room: Room is full.",
+                );
+            }
 
-            room.startGame(GameMode.ALL_TRUMP);
-            if (!room.gameEngine) throw new Error("GameEngine didn't start");
-            const cardCounts = mapHandLengths(room.gameEngine.hands);
-
-            playerIds.forEach((pid) => {
-                io.to(pid).emit("updateBoard", {
-                    hand: room.gameEngine?.hands[pid],
-                    cardCounts: cardCounts,
-                    turn: playerIds[0],
-                    playedCards: [],
-                });
-            });
-        }
-
-        socket.on("playCard", async (card: CardRaw, ack: (success: boolean) => void) => {
-            console.log(
-                `Player ${socket.id}, played ${card.rank} of ${card.suit}`,
-            );
-
-            try {
-                if (!room.gameEngine) {
-                    console.log("GameEngine not loaded");
-                    return;
+            if (room.isFull()) {
+                room.joinRandomTeams();
+                try {
+                    room.initGame();
+                    const state = room.getGameState();
+                    const config = room.getGameConfig();
+                    broadCastGameInit(io, state, config, room);
+                } catch (err) {
+                    io.to(room.name).emit("room:error", "Error starting game");
                 }
-
-                const success = room.gameEngine.playCard(socket.id, card) ?? false;
-                ack(success);
-
-                if (!success) {
-                    console.log(`Player couldn't play: ${card.rank} of ${card.suit}`);
-                    return;
-                }
-
-                const cardCounts = mapHandLengths(room.gameEngine.hands);
-                socket.to(room.name).emit("updateBoard", {
-                    cardCounts: cardCounts,
-                    turn: room.gameEngine.turn,
-                    playedCards: room.gameEngine.playedCards
-                });
-                io.to(socket.id).emit("updateBoard", {
-                    hand: room.gameEngine.hands[socket.id],
-                    cardCounts: cardCounts,
-                    turn: room.gameEngine.turn,
-                    playedCards: room.gameEngine.playedCards
-                });
-                // io.to(room.name).emit("updateBoard", {
-                //     hand: room.gameEngine.hands[socket.id],
-                //     cardCounts: cardCounts,
-                //     turn: room.gameEngine.turn,
-                //     playedCards: room.gameEngine.playedCards
-                // });
-
-                if (room.gameEngine.isTrickOver()) {
-                    setTimeout(() => {
-                        if (!room.gameEngine) return;
-
-                        room.gameEngine.finishTrick();
-                        const cardCounts = mapHandLengths(room.gameEngine.hands);
-
-                        // socket.to(room.name).emit("updateBoard", {
-                        //     cardCounts: cardCounts,
-                        //     turn: room.gameEngine.turn,
-                        //     playedCards: room.gameEngine.playedCards
-                        // });
-                        const playerIds = room.getAllPlayerIds();
-                        playerIds.forEach((pid) => {
-                            io.to(pid).emit("updateBoard", {
-                                hand: room.gameEngine?.hands[pid],
-                                cardCounts: cardCounts,
-                                turn: playerIds[0],
-                                playedCards: [],
-                            });
-                        })
-                    }, 1500);
-                }
-            } catch (error) {
-                console.log(error);
-                ack(false);
             }
         });
 
+        socket.on("game:move", (move: Move) => {
+            logger.logMove(move, socket.id);
+            const room = roomManager.findRoomBySocket(socket.id);
+            if (!room) {
+                socket.emit("client:error", "You're not in any room/game");
+                return;
+            }
+            if (!room.game) {
+                socket.emit("client:error", "No game started in this room");
+                return;
+            }
+
+            const result = room.game.applyMove(move);
+
+            if (result.ok) {
+                broadCastGameState(io, result.state, room);
+
+                if (shouldResolveTrick(result.state)) {
+                    const result = room.game.applyMove({type: "RESOLVE_TRICK"});
+                    if (result.ok) {
+                        setTimeout(() => {
+                            broadCastGameState(io, result.state, room);
+                        }, 1000);
+                    } else {
+                        console.log(result.reason);
+                    }
+                }
+
+            } else {
+                socket.emit("client:error", result.reason);
+            }
+        });
+
+        socket.on("room:ready", (isReady) => {
+            const room = roomManager.findRoomBySocket(socket.id);
+            if (!room) {
+                socket.emit("client:error", "Not in any room");
+                return;
+            }
+            try {
+                isReady ? room.ready(socket.id) : room.unready(socket.id);
+            } catch(err) {
+                socket.emit("client:error", err instanceof Error ? err.message : "Unknown error");
+            }
+
+            io.to(room.name).emit("room:readied", Array.from(room.readyPlayers));
+
+            if (room.allReady()) {
+                if (!room.game) {
+                    socket.emit("client:error", "No game started");
+                    return;
+                }
+
+                if (room.isGameFinished()) {
+                    room.initRematch();
+                    const state = room.getGameState();
+                    const config = room.getGameConfig();
+                    broadCastGameInit(io, state, config, room);
+                    return;
+                }
+
+                const result = room.game.applyMove({type: "START_NEW_ROUND"});
+                if (result.ok) {
+                    broadCastGameState(io, result.state, room);
+                }
+            }
+        });
+
+        socket.on("room:leave", (roomId) => {
+            const room = roomManager.getRoom(roomId);
+            try {
+                room.leave(socket.id);
+            } catch (err) {
+                socket.emit("client:error", "Player not in room");
+            }
+
+            io.to(room.name).emit("room:left", {
+                player: socket.id,
+                room: room.name,
+            });
+        });
+
         socket.on("disconnect", () => {
-            console.log(`A user disconnected: ${socket}`);
-            console.log(`User id: ${socket.id}`);
-            room.players.delete(socket.id);
+            const room = roomManager.findRoomBySocket(socket.id);
+            if (!room) return;
+
+            try {
+                room.leave(socket.id);
+            } catch (err) {
+                socket.emit("client:error", "Player not in room");
+            }
+            io.to(room.name).emit("room:left", {
+                player: socket.id,
+                room: room.name,
+            });
         });
     });
 }
 
-function mapHandLengths(hands: Record<string, CardRaw[]>): Record<string, number> {
-    return Object.fromEntries(
-        Object.entries(hands).map(([pid, hand]) => [pid, hand.length])
+function broadCastGameState(
+    io: Server<ClientToServerEvents, ServerToClientEvents, any>,
+    state: GameState,
+    room: Room,
+) {
+    for (const pid of room.players) {
+        console.log(`Broadcast game state to ${pid}`);
+        io.to(pid).emit("game:state", buildPlayerView(state, pid));
+    }
+}
+
+function broadCastGameInit(
+    io: Server<ClientToServerEvents, ServerToClientEvents, any>,
+    state: GameState,
+    config: GameConfig,
+    room: Room,
+) {
+    for (const pid of room.players) {
+        console.log(`Broadcast config to ${pid}`);
+        io.to(pid).emit("game:init", {
+            config: config,
+            view: buildPlayerView(state, pid),
+        });
+    }
+}
+
+function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
+    const { hands, deck, ...publicRound } = state.round;
+    const playerHand = hands[player];
+    const numCards: Record<string, number> = Object.fromEntries(
+        Object.entries(hands)
+            .filter(([pid, _]) => pid !== player)
+            .map(([pid, cards]) => [pid, cards.length]),
     );
+    return {
+        ...state,
+        round: {
+            ...publicRound,
+            hand: playerHand,
+            numCards,
+        },
+    };
+}
+
+function shouldResolveTrick(state: GameState): boolean {
+    return state.phase === GamePhase.Playing && state.trickStatus === TrickStatus.Resolving;
 }

@@ -1,41 +1,50 @@
 import io from "socket.io-client";
-import { CardRaw, BoardState, JoinRoomPayload, GameConfig, PlayedCardPayload } from "@shared/types";
 import type { Socket } from "socket.io-client";
 import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
-import { CardObject } from "./types";
-import { Vector2d } from "konva/lib/types";
+import { Card, GameConfig, Move, PlayerId, PlayerView, RoomJoinedPayload } from "@shared/types";
 
-export const socket : Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
-export function updateBoard(callback: (state: BoardState) => void) {
-    socket.on("updateBoard", callback);
+const SERVER_URL = "http://localhost:8080";
+export const socket : Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {transports: ["websocket"]});
+
+// Client to Server
+export function roomJoin(roomId: string) {
+    socket.emit("room:join", roomId);
 }
 
-export function playCard(card: CardRaw, callback: (success: boolean) => void) {
-    socket.emit("playCard", card, callback);
+export function roomLeave(roomId: string) {
+    socket.emit("room:leave", roomId);
 }
 
+export function gameMove(move: Move) {
+    socket.emit("game:move", move);
+}
+
+export function roomReady(isReady: boolean) {
+    socket.emit("room:ready", isReady);
+}
+
+// Server to Client
 export function welcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);
 }
 
-export function joinTeam(callback: (team: string) => void) {
-    socket.on("joinTeam", callback);
+export function roomJoined(callback: (payload: RoomJoinedPayload) => void) {
+    socket.on("room:joined", callback);
 }
 
-export function joinRoom(room: string, teamPref: string) {
-    const payload : JoinRoomPayload = { roomName: room, teamPref: teamPref };
-    socket.emit("joinRoom", payload);
+export function updateGame(callback: (payload: PlayerView) => void) {
+    socket.on("game:state", callback);
 }
 
-export function joinedRoom(callback: (payload: JoinRoomPayload) => void) {
-    socket.on("joinedRoom", callback);
+export function startGame(callback: (payload: {config: GameConfig, view: PlayerView}) => void) {
+    socket.on("game:init", callback);
 }
 
-export function startGame(callback: (gameConfig: GameConfig) => void) {
-    socket.on("startGame", callback);
+export function clientError(callback: (err: string) => void) {
+    socket.on("client:error", callback);
 }
 
-export function playedCard(callback: (payload: PlayedCardPayload) => void) {
-    socket.on("playedCard", callback);
+export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
+    socket.on("room:readied", callback);
 }

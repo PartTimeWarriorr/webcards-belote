@@ -1,22 +1,21 @@
 import { renderHome } from "./views/Home";
+import { renderRoom } from "./views/Room";
 import { renderGame } from "./views/Game";
-
 let currentPage = "game";
 
-export function navigate(pageName: string) {
+export async function navigate(pageName: string) {
     currentPage = pageName;
     render();
 }
 
-function render() {
+async function render() {
     if (currentPage === "home") renderHome();
-    if (currentPage === "rooms") renderRooms();
-    if (currentPage === "game") renderGame();
+    if (currentPage === "room") renderRoom();
+    if (currentPage === "game") await renderGame();
 }
 
-function renderRooms() {
-    // app!.innerHTML = `<div id="container">Rooms</div>`
-    // currentPage = "rooms";
-}
+// function renderRooms() {
+//     const app = document.getElementById("app")!;
+// }
 
 render();
