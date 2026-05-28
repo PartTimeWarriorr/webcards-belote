@@ -1,6 +1,15 @@
 import {
+    GameConfig,
     Rank,
 } from "@shared/types";
+
+export const MOCK_CONFIG: GameConfig = {
+    players: ["p1", "p2", "p3", "p4"],
+    teams: {
+        team1: ["p1", "p3"],
+        team2: ["p2", "p4"],
+    },
+};
 
 export const VALAT_SCORE = 90;
 export const TARGET_SCORE = 151;

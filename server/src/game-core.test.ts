@@ -33,15 +33,8 @@ import {
     sortHandsDesc,
 } from "./card-actions";
 import { Game } from "./game";
-import { suite } from "node:test";
+import { MOCK_CONFIG } from "./constants";
 
-const MOCK_CONFIG: GameConfig = {
-    players: ["p1", "p2", "p3", "p4"],
-    teams: {
-        team1: ["p1", "p3"],
-        team2: ["p2", "p4"],
-    },
-};
 
 describe("Test bid handler", () => {
     test("Bid not higher", () => {

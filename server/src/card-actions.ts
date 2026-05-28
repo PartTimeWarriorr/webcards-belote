@@ -25,54 +25,56 @@ function getFullDeck(): Card[] {
 }
 
 export function dealInitial(
-    state: GameState,
+    deck: Card[],
+    hands: Record<PlayerId, Card[]>,
     config: GameConfig,
-): [Card[], Record<PlayerId, Card[]>] {
-    const deck = state.round.deck;
-    const hands = state.round.hands;
+): {deck: Card[], hands: Record<PlayerId, Card[]>} {
+    const newDeck = structuredClone(deck);
+    const newHands = structuredClone(hands);
 
     config.players.forEach((p) => {
-        hands[p] = deck.splice(0, 5);
+        newHands[p] = newDeck.splice(0, 5);
     });
 
-    return [deck, hands];
+    return {deck: newDeck, hands: newHands};
 }
 
 export function dealFinal(
-    state: GameState,
+    deck: Card[],
+    hands: Record<PlayerId, Card[]>,
     config: GameConfig,
-): [Card[], Record<PlayerId, Card[]>] {
-    const deck = state.round.deck;
-    const hands = state.round.hands;
+): {deck: Card[], hands: Record<PlayerId, Card[]>} {
+    const newDeck = structuredClone(deck);
+    const newHands = structuredClone(hands);
 
     config.players.forEach((p) => {
-        hands[p] = hands[p].concat(deck.splice(0, 3));
+        newHands[p] = newHands[p].concat(newDeck.splice(0, 3));
     });
 
-    return [deck, hands];
+    return {deck: newDeck, hands: newHands};
 }
 
 // Hand actions
 export function sortHandsDesc(
     config: GameConfig,
-    state: GameState,
+    hands: Record<PlayerId, Card[]>
 ): Record<PlayerId, Card[]> {
-    const hands = state.round.hands;
+    const newHands = structuredClone(hands);
     for (const p of config.players) {
-        hands[p].sort((a, b) => compareCardsFull(b, a));
+        newHands[p].sort((a, b) => compareCardsFull(b, a));
     }
-    return hands;
+    return newHands;
 }
 
 export function sortHandsAsc(
     config: GameConfig,
-    state: GameState,
+    hands: Record<PlayerId, Card[]>
 ): Record<PlayerId, Card[]> {
-    const hands = state.round.hands;
+    const newHands = structuredClone(hands);
     for (const p of config.players) {
-        hands[p].sort((a, b) => compareCardsFull(a, b));
+        newHands[p].sort((a, b) => compareCardsFull(a, b));
     }
-    return hands;
+    return newHands;
 }
 
 // Card actions

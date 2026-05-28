@@ -15,7 +15,7 @@ import { allButBidderPassed, allPassed, isRoundFinished } from "./transitions";
 import { calcAnnScores } from "./scoring";
 import { findAnns } from "./announcements";
 import { getTrickWinner, hasCard, canPlay } from "./play-rules";
-import { dealFinal, dealInitial, shuffle} from "./card-actions";
+import { dealFinal, dealInitial, shuffle } from "./card-actions";
 import { getNextPlayer, getNextToBid } from "./player-utils";
 
 export function handleBid(
@@ -70,74 +70,72 @@ export function handlePass(
     newPasses.add(player);
 
     if (allButBidderPassed({ ...state, passed: newPasses }, config)) {
-        const [newDeck, newHands] = dealFinal(state, config);
-        const tempState: PlayingState = {
-            ...state,
-            phase: GamePhase.Playing,
-            round: {
-                ...state.round,
-                highestBidder: state.highestBid?.[0] ?? "",
-                deck: newDeck,
-                hands: newHands,
-                mode: state.highestBid?.[1].mode ?? GameMode.ALL_TRUMP,
-                trump:
-                    state.highestBid?.[1].mode === GameMode.TRUMP
-                        ? state.highestBid[1].trump
-                        : undefined,
-                modifier: state.highestBid?.[1].modifier,
-                roundScores: { team1: 0, team2: 0 },
-            },
-            currentPlayer: getNextPlayer(config.players, state.round.dealer),
-            trickStatus: TrickStatus.Playing,
-            plays: [],
-        };
+        const { deck: newDeck, hands: newHands } = dealFinal(
+            state.round.deck,
+            state.round.hands,
+            config,
+        );
 
         const announcements =
-            tempState.round.mode === GameMode.NO_TRUMP
+            state.round.mode === GameMode.NO_TRUMP
                 ? {}
-                : findAnns(config, tempState);
+                : findAnns(config, {
+                      ...state,
+                      round: { ...state.round, deck: newDeck, hands: newHands },
+                  });
+
         return {
             ok: true,
             state: {
-                ...tempState,
+                ...state,
+                phase: GamePhase.Playing,
                 round: {
-                    ...tempState.round,
+                    ...state.round,
+                    highestBidder: state.highestBid?.[0] ?? "",
+                    deck: newDeck,
+                    hands: newHands,
+                    mode: state.highestBid?.[1].mode ?? GameMode.ALL_TRUMP,
+                    trump:
+                        state.highestBid?.[1].mode === GameMode.TRUMP
+                            ? state.highestBid[1].trump
+                            : undefined,
+                    modifier: state.highestBid?.[1].modifier,
+                    roundScores: { team1: 0, team2: 0 },
                     announcements: announcements,
                 },
+                currentPlayer: getNextPlayer(
+                    config.players,
+                    state.round.dealer,
+                ),
+                trickStatus: TrickStatus.Playing,
+                plays: [],
             },
         };
     }
 
     if (allPassed({ ...state, passed: newPasses }, config)) {
         const newDealer = getNextPlayer(config.players, state.round.dealer);
-        const newState: BiddingState = {
-            phase: GamePhase.Bidding,
-            round: {
-                announcements: {},
-                dealer: newDealer,
-                highestBidder: null,
-                deck: shuffle(),
-                hands: {},
-                roundScores: { team1: 0, team2: 0 },
-                announcementScores: { team1: 0, team2: 0 },
-            },
-            totalScores: state.totalScores,
-            hangingScore: state.hangingScore,
-            highestBid: null,
-            currentBidder: getNextPlayer(config.players, newDealer),
-            passed: new Set(),
-        };
-        const [newDeck, newHands] = dealInitial(newState, config);
+        const deck = shuffle();
+        const { deck: newDeck, hands: newHands } = dealInitial(
+            deck,
+            {},
+            config,
+        );
 
         return {
             ok: true,
             state: {
-                ...newState,
+                ...state,
+                phase: GamePhase.Bidding,
                 round: {
-                    ...newState.round,
+                    ...state.round,
+                    dealer: newDealer,
                     deck: newDeck,
                     hands: newHands,
                 },
+                highestBid: null,
+                currentBidder: getNextPlayer(config.players, newDealer),
+                passed: new Set(),
             },
         };
     }
@@ -185,13 +183,13 @@ export function handlePlay(
         };
     }
 
-    const newHands = state.round.hands;
+    const newHands = structuredClone(state.round.hands);
     const cardIndex = newHands[player].findIndex(
         (c) => c.rank === card.rank && c.suit === card.suit,
     );
     newHands[player].splice(cardIndex, 1);
 
-    const newPlays = state.plays;
+    const newPlays = structuredClone(state.plays);
     newPlays.push({ player: player, card: card });
 
     if (newPlays.length === 4) {
@@ -237,37 +235,32 @@ export function handleStartNewRound(
         // Is first round of the game
         const dealer =
             config.players[Math.floor(Math.random() * config.players.length)];
+        const deck = shuffle();
+        const { deck: newDeck, hands: newHands } = dealInitial(
+            deck,
+            {},
+            config,
+        );
 
-        const tempState: BiddingState = {
-            phase: GamePhase.Bidding,
-            round: {
-                announcements: {},
-                dealer: dealer,
-                highestBidder: null,
-                deck: shuffle(),
-                hands: {},
-                roundScores: { team1: 0, team2: 0 },
-                announcementScores: { team1: 0, team2: 0 },
-            },
-            totalScores: { team1: 0, team2: 0 },
-            hangingScore: 0,
-            highestBid: null,
-            currentBidder: getNextPlayer(config.players, dealer),
-            passed: new Set(),
-        };
-
-        const [newDeck, newHands] = dealInitial(tempState, config);
-        const state = {
-            ...tempState,
-            round: {
-                ...tempState.round,
-                deck: newDeck,
-                hands: newHands,
-            },
-        };
         return {
             ok: true,
-            state: state,
+            state: {
+                phase: GamePhase.Bidding,
+                round: {
+                    dealer: dealer,
+                    highestBidder: null,
+                    deck: newDeck,
+                    hands: newHands,
+                    roundScores: { team1: 0, team2: 0 },
+                    announcementScores: { team1: 0, team2: 0 },
+                    announcements: {},
+                },
+                totalScores: { team1: 0, team2: 0 },
+                hangingScore: 0,
+                highestBid: null,
+                currentBidder: getNextPlayer(config.players, dealer),
+                passed: new Set(),
+            },
         };
     } else {
         // Is 2nd or later round of the game
@@ -285,35 +278,31 @@ export function handleStartNewRound(
         }
 
         const dealer = getNextPlayer(config.players, state.round.dealer);
-        const newState: BiddingState = {
-            phase: GamePhase.Bidding,
-            round: {
-                announcements: {},
-                dealer: dealer,
-                highestBidder: null,
-                deck: shuffle(),
-                hands: {},
-                roundScores: { team1: 0, team2: 0 },
-                announcementScores: { team1: 0, team2: 0 },
-            },
-            totalScores: state.totalScores,
-            hangingScore: state.hangingScore,
-            highestBid: null,
-            currentBidder: getNextPlayer(config.players, dealer),
-            passed: new Set(),
-        };
-
-        const [newDeck, newHands] = dealInitial(newState, config);
+        const deck = shuffle();
+        const { deck: newDeck, hands: newHands } = dealInitial(
+            deck,
+            {},
+            config,
+        );
 
         return {
             ok: true,
             state: {
-                ...newState,
+                phase: GamePhase.Bidding,
                 round: {
-                    ...newState.round,
+                    dealer: dealer,
+                    highestBidder: null,
                     deck: newDeck,
                     hands: newHands,
+                    roundScores: { team1: 0, team2: 0 },
+                    announcementScores: { team1: 0, team2: 0 },
+                    announcements: {},
                 },
+                totalScores: state.totalScores,
+                hangingScore: state.hangingScore,
+                highestBid: null,
+                currentBidder: getNextPlayer(config.players, dealer),
+                passed: new Set(),
             },
         };
     }
@@ -346,15 +335,14 @@ export function handleResolveTrick(
             isRoundOver,
         );
         const annScores = calcAnnScores(config, state);
-        const newState = {
+        const { scores, hanging, condition } = addRoundScores(config, {
             ...state,
             round: {
                 ...state.round,
                 roundScores: newRoundScores,
                 announcementScores: annScores,
             },
-        };
-        const { scores, hanging, condition } = addRoundScores(config, newState);
+        });
         const winner = getGameWinner(scores);
 
         if (winner && condition !== "Valat") {

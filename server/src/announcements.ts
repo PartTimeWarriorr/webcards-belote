@@ -59,7 +59,7 @@ export function findAnns(
         acc[c] = [];
         return acc;
     }, {});
-    const sorted = sortHandsDesc(config, state);
+    const sorted = sortHandsDesc(config, state.round.hands);
 
     for (const [p, hand] of Object.entries(sorted)) {
         for (const suit of Object.values(Suit)) {
