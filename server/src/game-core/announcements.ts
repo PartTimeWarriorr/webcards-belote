@@ -9,7 +9,8 @@ export function removeSquares(anns: Announcement[]): Announcement[] {
 }
 
 // !
-export function highestSquare(anns: Announcement[]): Announcement {
+export function highestSquare(anns: Announcement[]): Announcement | undefined {
+    if (anns.length === 0) return undefined;
     return anns.reduce((acc, a) => {
         if (
             a.type !== AnnouncementType.Square ||
@@ -24,7 +25,8 @@ export function highestSquare(anns: Announcement[]): Announcement {
 }
 
 // !
-export function highestSequence(anns: Announcement[]): Announcement {
+export function highestSequence(anns: Announcement[]): Announcement | undefined {
+    if (anns.length === 0) return undefined;
     return anns.reduce((acc, a) => {
         return compareSequences(acc, a) > 0 ? acc : a;
     });

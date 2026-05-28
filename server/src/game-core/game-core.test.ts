@@ -19,7 +19,7 @@ import * as handlers from "./game-handlers";
 import { compareCardsPower, higherBid } from "./compare";
 import { Game } from "./game";
 import { MOCK_CONFIG } from "./constants";
-import { getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit } from "./play-rules";
+import { canPlay, getHighestPlayOfSuit, getTrickWinner, hasHigherSameSuit } from "./play-rules";
 import { isSameTeam } from "./player-utils";
 import { getCardsOfSuit, sortHandsAsc } from "./card-actions";
 import { findAnns } from "./announcements";
@@ -398,6 +398,33 @@ describe("Playtest", () => {
         expect(result.ok).toBe(true);
         if (result.ok && result.state.phase === GamePhase.Bidding)
             expect(result.state.currentBidder).toBe("p2");
+    });
+
+    test("Playtest - Playing", () => {
+        const state = createPlayingState({
+            plays: [
+                {player: "p1", card: {rank: Rank.Eight, suit: Suit.Hearts}},
+                {player: "p2", card: {rank: Rank.King, suit: Suit.Clubs}}
+            ],
+            currentPlayer: "p3",
+            round: {
+                hands: {
+                    p3: [{rank: Rank.Nine, suit: Suit.Diamonds}, {rank: Rank.Queen, suit: Suit.Spades}]
+                },
+                deck: [],
+                announcements: {},
+                announcementScores: {team1: 0, team2: 0},
+                roundScores: {team1: 0, team2: 0},
+                highestBidder: null,
+                dealer: "p4",
+                mode: GameMode.TRUMP,
+                trump: Suit.Diamonds,
+            }
+        });
+        const result = canPlay(state, "p3", {rank: Rank.Queen, suit: Suit.Spades}, MOCK_CONFIG);
+        if (!result.ok)
+            console.log(result.reason);
+        expect(result.ok).toBe(true);
     });
 });
 

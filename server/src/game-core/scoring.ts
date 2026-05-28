@@ -11,9 +11,19 @@ import {
     TeamId,
 } from "@shared/types";
 import { PlayingState } from "@shared/types";
-import { ALL_TRUMP_SCORE, NO_TRUMP_SCORE, TARGET_SCORE, VALAT_SCORE } from "./constants";
+import {
+    ALL_TRUMP_SCORE,
+    NO_TRUMP_SCORE,
+    TARGET_SCORE,
+    VALAT_SCORE,
+} from "./constants";
 import { compareSequences } from "./compare";
-import { highestSequence, highestSquare, removeSquares, splitAnns } from "./announcements";
+import {
+    highestSequence,
+    highestSquare,
+    removeSquares,
+    splitAnns,
+} from "./announcements";
 import { getTeamId } from "./player-utils";
 
 function calcScore(base: number): number {
@@ -242,14 +252,16 @@ export function calcAnnScores(config: GameConfig, state: GameState): Scores {
     const team1Highest = highestSequence(team1Seqs);
     const team2Highest = highestSequence(team2Seqs);
 
-    const higher = compareSequences(team1Highest, team2Highest);
-    if (higher > 0) {
-        team2Seqs = [];
-    } else if (higher < 0) {
-        team1Seqs = [];
-    } else {
-        team1Seqs = [];
-        team2Seqs = [];
+    if (team1Highest && team2Highest) {
+        const higher = compareSequences(team1Highest, team2Highest);
+        if (higher > 0) {
+            team2Seqs = [];
+        } else if (higher < 0) {
+            team1Seqs = [];
+        } else {
+            team1Seqs = [];
+            team2Seqs = [];
+        }
     }
 
     const team1Square = highestSquare(team1Other);
