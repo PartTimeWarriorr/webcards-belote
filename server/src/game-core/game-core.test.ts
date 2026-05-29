@@ -277,6 +277,38 @@ describe("Playtest", () => {
         expect(result.ok).toBe(true);
     });
 
+    test("Playing - 2", () => {
+        const state = createPlayingState({
+            plays: [
+                { player: "p1", card: { rank: Rank.Jack, suit: Suit.Spades } },
+            ],
+            currentPlayer: "p2",
+            round: {
+                announcements: {},
+                deck: [],
+                hands: {
+                    p2: [
+                        { rank: Rank.Queen, suit: Suit.Hearts },
+                        { rank: Rank.Ten, suit: Suit.Clubs },
+                        { rank: Rank.King, suit: Suit.Clubs },
+                        { rank: Rank.Seven, suit: Suit.Diamonds },
+                    ],
+                },
+                dealer: "a",
+                highestBidder: null,
+                roundScores: { team1: 0, team2: 0 },
+                announcementScores: { team1: 0, team2: 0 },
+                mode: GameMode.TRUMP,
+                trump: Suit.Hearts,
+            },
+        });
+
+        const result = handlers.handlePlay(MOCK_CONFIG, state, "p2", {rank: Rank.Queen, suit: Suit.Hearts});
+        expect(result.ok).toBe(true);
+        if (!result.ok) console.log(result.reason);
+
+    });
+
     test("Comparing", () => {
         const state = createPlayingState({
             round: {

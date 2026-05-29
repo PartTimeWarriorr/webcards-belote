@@ -1,5 +1,15 @@
-import { GamePhase, GameState, GameConfig, Move, Result } from "@shared/types";
+import {
+    GamePhase,
+    GameState,
+    GameConfig,
+    Move,
+    Result,
+    TrickStatus,
+    PlayingState,
+    BiddingState,
+} from "@shared/types";
 import * as handlers from "./game-handlers";
+import { canPlay } from "./play-rules";
 
 export class Game {
     private state: GameState;
@@ -9,7 +19,8 @@ export class Game {
 
     constructor(config: GameConfig) {
         this.config = config;
-        const result = handlers.handleStartNewRound(this.config);
+        // const result = handlers.handleStartNewRound(this.config);
+        const result = this.applyMove({ type: "START_NEW_ROUND" });
         if (!result.ok) throw new Error(result.reason);
         this.state = result.state;
     }
@@ -95,6 +106,75 @@ export class Game {
             this.state = result.state;
         }
 
+        while (this.isBotTurn()) {
+            const m: Move | undefined = this.botMove();
+            if (m) {
+                switch (m.type) {
+                    case "PASS": {
+                        result = handlers.handlePass(
+                            this.config,
+                            this.state as BiddingState,
+                            m.player,
+                        );
+                        if (result.ok) this.state = result.state;
+                        break;
+                    }
+                    case "PLAY": {
+                        result = handlers.handlePlay(
+                            this.config,
+                            this.state as PlayingState,
+                            m.player,
+                            m.card,
+                        );
+                        if (result.ok) this.state = result.state;
+                        break;
+                    }
+                }
+            }
+        }
+
         return result;
+    }
+
+    isBotTurn() {
+        switch (this.state.phase) {
+            case GamePhase.Bidding: {
+                return this.isBot(this.state.currentBidder);
+            }
+            case GamePhase.Playing: {
+                return (
+                    this.isBot(this.state.currentPlayer) &&
+                    this.state.trickStatus === TrickStatus.Playing
+                );
+            }
+        }
+
+        return false;
+    }
+
+    isBot(name: string) {
+        return name.startsWith("bot");
+    }
+
+    botMove(): Move | undefined {
+        switch (this.state.phase) {
+            case GamePhase.Bidding: {
+                return { type: "PASS", player: this.state.currentBidder };
+            }
+            case GamePhase.Playing: {
+                const botId = this.state.currentPlayer;
+                const botHand = this.state.round.hands[botId];
+                const card = botHand.find(
+                    (c) =>
+                        canPlay(
+                            this.state as PlayingState,
+                            botId,
+                            c,
+                            this.config,
+                        ).ok,
+                )!;
+                return { type: "PLAY", player: botId, card: card };
+            }
+        }
     }
 }

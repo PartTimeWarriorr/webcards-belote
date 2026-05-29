@@ -17,4 +17,8 @@ export class RoomManager {
 
         return undefined;
     }
+
+    addRoom(roomName: string, isBotRoom: boolean) {
+        this.rooms.set(roomName, new Room(roomName, isBotRoom));
+    }
 }
