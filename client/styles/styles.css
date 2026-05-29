@@ -265,7 +265,8 @@ input:checked+label.btn-main {
 }
 
 .announcements-tab {
-    color: #80808080;
+    color: #808080;
+    background-color: #AAAAAA80;
     position: absolute;
     top: 20%;
     left: 80%;
