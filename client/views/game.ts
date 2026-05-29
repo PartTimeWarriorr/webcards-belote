@@ -263,7 +263,7 @@ export async function renderGame() {
         errorTab.textContent = err;
     });
 
-    roomJoin("Game_1");
+    roomJoin("Test");
 }
 
 function rotateSeats(seats: Seats, playerId: string): Seats {
