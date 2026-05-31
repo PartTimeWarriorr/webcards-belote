@@ -6,17 +6,18 @@
     --btn-main-color: #57f269;
     --btn-main-hover: #48c357;
     --btn-main-toggle: #13761e;
+    --background-light: #e6fae9;
     /* --bg-color: #FDFBD4; */
     --bg-color: black;
-    --club-icon: url('/suits/club.svg');
-    --diamond-icon: url('/suits/diamond.svg');
-    --heart-icon: url('/suits/heart.svg');
-    --spade-icon: url('/suits/spade.svg');
+    --club-icon: url("/suits/club.svg");
+    --diamond-icon: url("/suits/diamond.svg");
+    --heart-icon: url("/suits/heart.svg");
+    --spade-icon: url("/suits/spade.svg");
 }
 
 body {
     background-color: var(--bg-color);
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 .main-menu {
@@ -31,14 +32,17 @@ body {
     margin: 2vw;
     min-width: 15vw;
     max-width: 50%;
-    background-color: var(--btn-main-color); 
-    border-radius: 5px;
+    background-color: var(--btn-main-color);
+    border-radius: 10px;
     border: none;
-    transition: background-color 0.125s;
+    transition: all 0.3s;
+    cursor: pointer;
 }
 
 .btn-main:hover {
     background-color: var(--btn-main-hover);
+    corner-top-left-shape: bevel;
+    corner-bottom-right-shape: bevel;
 }
 
 .btn-small {
@@ -47,14 +51,22 @@ body {
     width: 20%;
     max-width: 2vw;
     background-color: var(--btn-main-color);
-    border-radius: 5px;
+    border-radius: 10px;
     border: none;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.btn-small:hover {
+    background-color: var(--btn-main-hover);
+    corner-top-left-shape: bevel;
+    corner-bottom-right-shape: bevel;
 }
 
 .modal {
     background-color: white;
     width: 80%;
-    margin: auto; 
+    margin: auto;
     margin-top: 5%;
     height: 75vh;
     border-radius: 5px;
@@ -98,10 +110,19 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 2rem;
-    border: solid black;
+    margin: 1rem;
+    border: solid var(--btn-main-toggle);
+    background-color: var(--background-light);
+    border-radius: 10px;
+    transition: all 0.3s;
+    cursor: pointer;
 }
 
-.btn-blue {
+.lobby-box:hover {
+    background-color: var(--btn-main-color);
+}
+
+/* .btn-blue {
     border-radius: 50%;
     padding: 4rem;
     background-color: blue;
@@ -113,7 +134,7 @@ body {
     padding: 4rem;
     background-color: yellow;
     border: none;
-}
+} */
 
 .gamemode-modal {
     top: 50%;
@@ -260,13 +281,13 @@ body {
     opacity: 0;
 }
 
-input:checked+label.btn-main {
+input:checked + label.btn-main {
     background-color: var(--btn-main-toggle);
 }
 
 .announcements-tab {
     color: #808080;
-    background-color: #AAAAAA80;
+    background-color: #aaaaaa80;
     position: absolute;
     top: 20%;
     left: 80%;

@@ -66,6 +66,13 @@ export type Bid =
     | { mode: GameMode.NO_TRUMP; modifier?: Modifier }
     | { mode: GameMode.ALL_TRUMP; modifier?: Modifier };
 
+export type User = {
+    username: string,
+    email: string,
+    displayName: string,
+    isBot: boolean,
+}
+
 export type Seats = [PlayerId, PlayerId, PlayerId, PlayerId];
 
 export type Scores = Record<TeamId, number>;

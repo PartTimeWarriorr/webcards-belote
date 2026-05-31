@@ -2,11 +2,17 @@ import { roomJoined, roomJoin, startGame } from "../src/socket";
 import { navigate } from "../main";
 import { GameConfig } from "@shared/types";
 
+let isAuth = false;
 export function renderHome() {
     const app = document.getElementById("app")!;
 
     app.innerHTML = `
             <div id="joinLobbyModal" class="modal stepper">
+
+            ${
+                isAuth
+                    ? `
+
                 <div id="joinLobbyTrack" class="stepper-track">
                     <div class="step step-center">
                         <button id="joinLobbyBtn" class="btn-main">
@@ -31,6 +37,11 @@ export function renderHome() {
                         </div>
                     </div>
                 </div>
+                `
+                    : `
+                <button id="loginButton" class="btn-main">Login</button>
+                `
+            }
             </div>
     `;
 
@@ -46,12 +57,11 @@ export function renderHome() {
         stepper?.classList.remove("step-2");
     });
 
-    const lobbyBoxes = document.querySelectorAll('.lobby-box');
+    const lobbyBoxes = document.querySelectorAll(".lobby-box");
     lobbyBoxes.forEach((box) => {
-        box.addEventListener('click', async () => {
-            roomJoin("Game_1");  
+        box.addEventListener("click", async () => {
+            roomJoin("Game_1");
             await navigate("game");
         });
     });
-
 }
