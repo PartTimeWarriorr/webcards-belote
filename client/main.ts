@@ -1,7 +1,7 @@
-import { renderHome } from "./views/Home";
-import { renderRoom } from "./views/Room";
+import { renderHome } from "./views/home";
+import { renderRoom } from "./views/room";
 import { renderGame } from "./views/game";
-let currentPage = "room";
+let currentPage = "home";
 
 export async function navigate(pageName: string) {
     currentPage = pageName;

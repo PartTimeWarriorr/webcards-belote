@@ -16,6 +16,14 @@ import {
     TrickStatus,
 } from "@shared/types";
 import { Room } from "./room";
+import { Request } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
+declare module "socket.io" {
+    export interface Socket {
+        userId: string;
+    }
+}
 
 const roomManager = new RoomManager();
 roomManager.addRoom("Test", true);
@@ -25,6 +33,7 @@ export function setupSocket(server: any) {
     const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
         cors: {
             origin: ["https://localhost:5173", "https://admin.socket.io"],
+            methods: ["GET", "POST"],
             credentials: true,
         },
     });
@@ -33,17 +42,41 @@ export function setupSocket(server: any) {
         auth: false,
     });
 
-    io.on("connection", (socket) => {
-        socket.emit("welcome", socket.id);
+    io.use((socket, next) => {
+        const cookie = socket.handshake.headers.cookie;
 
+        if (!cookie) {
+            return next(new Error("Missing cookie"));
+        }
+
+        const token = cookie.split("=")[1];
+
+        if (!token) {
+            return next(new Error("Missing token"));
+        }
+
+        try {
+            const decoded = <JwtPayload>(
+                jwt.verify(token, process.env.JWT_SECRET)
+            );
+            socket.userId = decoded.userId;
+            next();
+        } catch (err) {
+            return next(new Error("Invalid token"));
+        }
+    });
+
+    io.on("connection", (socket) => {
+        socket.emit("welcome", socket.userId);
+        console.log(`${socket.userId} connected`);
         socket.on("room:join", (roomId) => {
             const room = roomManager.getRoom(roomId);
-            const joined = room.join(socket.id);
+            const joined = room.join(socket.userId);
 
             if (joined) {
                 socket.join(room.name);
                 io.to(room.name).emit("room:joined", {
-                    player: socket.id,
+                    player: socket.userId,
                     room: room.name,
                 });
             } else {
@@ -67,8 +100,8 @@ export function setupSocket(server: any) {
         });
 
         socket.on("game:move", (move: Move) => {
-            logger.logMove(move, socket.id);
-            const room = roomManager.findRoomBySocket(socket.id);
+            logger.logMove(move, socket.userId);
+            const room = roomManager.findRoomBySocket(socket.userId);
             if (!room) {
                 socket.emit("client:error", "You're not in any room/game");
                 return;
@@ -84,7 +117,9 @@ export function setupSocket(server: any) {
                 broadCastGameState(io, result.state, room);
 
                 if (shouldResolveTrick(result.state)) {
-                    const result = room.game.applyMove({type: "RESOLVE_TRICK"});
+                    const result = room.game.applyMove({
+                        type: "RESOLVE_TRICK",
+                    });
                     if (result.ok) {
                         setTimeout(() => {
                             broadCastGameState(io, result.state, room);
@@ -93,25 +128,32 @@ export function setupSocket(server: any) {
                         console.log(result.reason);
                     }
                 }
-
             } else {
                 socket.emit("client:error", result.reason);
             }
         });
 
         socket.on("room:ready", (isReady) => {
-            const room = roomManager.findRoomBySocket(socket.id);
+            const room = roomManager.findRoomBySocket(socket.userId);
             if (!room) {
                 socket.emit("client:error", "Not in any room");
                 return;
             }
             try {
-                isReady ? room.ready(socket.id) : room.unready(socket.id);
-            } catch(err) {
-                socket.emit("client:error", err instanceof Error ? err.message : "Unknown error");
+                isReady
+                    ? room.ready(socket.userId)
+                    : room.unready(socket.userId);
+            } catch (err) {
+                socket.emit(
+                    "client:error",
+                    err instanceof Error ? err.message : "Unknown error",
+                );
             }
 
-            io.to(room.name).emit("room:readied", Array.from(room.readyPlayers));
+            io.to(room.name).emit(
+                "room:readied",
+                Array.from(room.readyPlayers),
+            );
 
             if (room.allReady()) {
                 if (!room.game) {
@@ -127,7 +169,7 @@ export function setupSocket(server: any) {
                     return;
                 }
 
-                const result = room.game.applyMove({type: "START_NEW_ROUND"});
+                const result = room.game.applyMove({ type: "START_NEW_ROUND" });
                 if (result.ok) {
                     broadCastGameState(io, result.state, room);
                 }
@@ -137,28 +179,28 @@ export function setupSocket(server: any) {
         socket.on("room:leave", (roomId) => {
             const room = roomManager.getRoom(roomId);
             try {
-                room.leave(socket.id);
+                room.leave(socket.userId);
             } catch (err) {
                 socket.emit("client:error", "Player not in room");
             }
 
             io.to(room.name).emit("room:left", {
-                player: socket.id,
+                player: socket.userId,
                 room: room.name,
             });
         });
 
         socket.on("disconnect", () => {
-            const room = roomManager.findRoomBySocket(socket.id);
+            const room = roomManager.findRoomBySocket(socket.userId);
             if (!room) return;
 
             try {
-                room.leave(socket.id);
+                room.leave(socket.userId);
             } catch (err) {
                 socket.emit("client:error", "Player not in room");
             }
             io.to(room.name).emit("room:left", {
-                player: socket.id,
+                player: socket.userId,
                 room: room.name,
             });
         });
@@ -210,5 +252,8 @@ function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
 }
 
 function shouldResolveTrick(state: GameState): boolean {
-    return state.phase === GamePhase.Playing && state.trickStatus === TrickStatus.Resolving;
+    return (
+        state.phase === GamePhase.Playing &&
+        state.trickStatus === TrickStatus.Resolving
+    );
 }

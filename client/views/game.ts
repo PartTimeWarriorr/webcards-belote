@@ -27,6 +27,7 @@ import {
     welcome,
 } from "@/socket";
 import { getCardId } from "@/utils";
+import { userId } from "./room";
 
 let playerGameView: PlayerView | null = null;
 let localConfig: GameConfig | null = null;
@@ -80,7 +81,8 @@ export async function renderGame() {
 
     // const scale = Math.min(scaleX / 2, scaleY / 2);
     // stage.scale({ x: scale, y: scale });
-
+    clientId = userId;
+    console.log(clientId);
     const app = document.getElementById("app")!;
     app.innerHTML = `
         <div id="biddingMenu" class="gamemode-modal">
@@ -144,6 +146,7 @@ export async function renderGame() {
     let board = await Board.init(layer, dragLayer, stage);
 
     startGame((payload: { config: GameConfig; view: PlayerView }) => {
+        console.log("START GAME RECEIVED");
         localConfig = payload.config;
         playerGameView = payload.view;
         if (!clientId) {

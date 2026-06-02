@@ -4,8 +4,12 @@ import {
     roomMessaged,
     roomReadied,
     roomReady,
+    welcome,
 } from "@/socket";
 import { PlayerId } from "@shared/types";
+import { navigate } from "../main";
+
+export let userId: PlayerId | undefined = undefined;
 
 export function renderRoom() {
     const app = document.getElementById("app")!;
@@ -44,12 +48,17 @@ export function renderRoom() {
     //     chatBox?.appendChild(elem);
     // });
 
-    roomReadied((readyPlayers: PlayerId[]) => {
+    roomReadied(async (readyPlayers: PlayerId[]) => {
         const count = readyPlayers.length;
         displayReadyCount(count);
         if (count === 4) {
-            roomJoin("Game_1");
+            await navigate("game");
         }
+    });
+
+    welcome((id) => {
+        userId = id;
+        console.log(userId);
     });
 }
 

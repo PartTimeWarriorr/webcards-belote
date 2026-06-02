@@ -1,15 +1,32 @@
 import io from "socket.io-client";
 import type { Socket } from "socket.io-client";
-import type { ServerToClientEvents, ClientToServerEvents } from "@shared/events";
-import { Card, GameConfig, Move, PlayerId, PlayerView, RoomJoinedPayload } from "@shared/types";
-
+import type {
+    ServerToClientEvents,
+    ClientToServerEvents,
+} from "@shared/events";
+import {
+    Card,
+    GameConfig,
+    Move,
+    PlayerId,
+    PlayerView,
+    RoomJoinedPayload,
+} from "@shared/types";
 
 const SERVER_URL = "http://localhost:8080";
-let socket : Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
-
+let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+    // if (!token) {
+    //     throw new Error("No token provided");
+    // }
     if (!socket) {
-        socket = io(SERVER_URL, {transports: ["websocket"]});
+        socket = io(SERVER_URL, {
+            withCredentials: true,
+            transports: ["websocket"],
+            // auth: {
+            //     token: token,
+            // },
+        });
     }
     return socket;
 }
@@ -48,7 +65,9 @@ export function updateGame(callback: (payload: PlayerView) => void) {
     getSocket().on("game:state", callback);
 }
 
-export function startGame(callback: (payload: {config: GameConfig, view: PlayerView}) => void) {
+export function startGame(
+    callback: (payload: { config: GameConfig; view: PlayerView }) => void,
+) {
     getSocket().on("game:init", callback);
 }
 
@@ -60,6 +79,8 @@ export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
     getSocket().on("room:readied", callback);
 }
 
-export function roomMessaged(callback: (username: string, msg: string) => void) {
+export function roomMessaged(
+    callback: (username: string, msg: string) => void,
+) {
     getSocket().on("room:messaged", callback);
 }

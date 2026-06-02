@@ -86,6 +86,7 @@ async function renderLoggedIn(user: User) {
             const response = await createRoom({name: name});
             console.log(`Room ${response.data.name} created successfully`);
             roomJoin(name);
+            await navigate("room");
         } catch (err) {
             console.error(err);
         }
@@ -121,7 +122,7 @@ async function renderLoggedIn(user: User) {
             return;
         }
         roomJoin(name);
-        await navigate("game");
+        await navigate("room");
     });
 }
 
