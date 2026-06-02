@@ -5,46 +5,53 @@ import { Card, GameConfig, Move, PlayerId, PlayerView, RoomJoinedPayload } from 
 
 
 const SERVER_URL = "http://localhost:8080";
-export const socket : Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {transports: ["websocket"]});
+let socket : Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+
+function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+    if (!socket) {
+        socket = io(SERVER_URL, {transports: ["websocket"]});
+    }
+    return socket;
+}
 
 // Client to Server
 export function roomJoin(roomId: string) {
-    socket.emit("room:join", roomId);
+    getSocket().emit("room:join", roomId);
 }
 
 export function roomLeave(roomId: string) {
-    socket.emit("room:leave", roomId);
+    getSocket().emit("room:leave", roomId);
 }
 
 export function gameMove(move: Move) {
-    socket.emit("game:move", move);
+    getSocket().emit("game:move", move);
 }
 
 export function roomReady(isReady: boolean) {
-    socket.emit("room:ready", isReady);
+    getSocket().emit("room:ready", isReady);
 }
 
 // Server to Client
 export function welcome(callback: (playerId: string) => void) {
-    socket.on("welcome", callback);
+    getSocket().on("welcome", callback);
 }
 
 export function roomJoined(callback: (payload: RoomJoinedPayload) => void) {
-    socket.on("room:joined", callback);
+    getSocket().on("room:joined", callback);
 }
 
 export function updateGame(callback: (payload: PlayerView) => void) {
-    socket.on("game:state", callback);
+    getSocket().on("game:state", callback);
 }
 
 export function startGame(callback: (payload: {config: GameConfig, view: PlayerView}) => void) {
-    socket.on("game:init", callback);
+    getSocket().on("game:init", callback);
 }
 
 export function clientError(callback: (err: string) => void) {
-    socket.on("client:error", callback);
+    getSocket().on("client:error", callback);
 }
 
 export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
-    socket.on("room:readied", callback);
+    getSocket().on("room:readied", callback);
 }

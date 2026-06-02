@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Role } from "../prisma/generated/client";
+import { PrismaClient, Role, Room } from "../prisma/generated/client";
 import { User } from "../prisma/generated/client";
 import bcrypt from "bcryptjs";
 
@@ -23,7 +23,7 @@ const prisma = new PrismaClient({
 
 //     return user;
 // }
-export async function getRoomPage(page: number = 1, limit: number = 10) {
+export async function getRoomPage(page: number = 1, limit: number = 10): Promise<Room[]> {
     const rooms = await prisma.room.findMany({
         skip: (page - 1) * limit,
         take: limit
@@ -31,7 +31,7 @@ export async function getRoomPage(page: number = 1, limit: number = 10) {
     return rooms;
 }
 
-export async function findUser(email: string, password: string) {
+export async function getUserByEmail(email: string, password: string) {
     const user = await prisma.user.findUnique({
         where: {
             email
@@ -52,6 +52,21 @@ export async function findUser(email: string, password: string) {
     return otherInfo;
 }
 
+export async function getUserById(id: string): Promise<Omit<User, 'password'> | null> {
+    const user = await prisma.user.findUnique({
+        where: {
+            id 
+        }
+    });
+
+    if (!user) {
+        return null;
+    }
+
+    const {password, ...other} = user;
+    return other;
+}
+
 export async function createUser(
     email: string,
     username: string,
@@ -65,4 +80,16 @@ export async function createUser(
             password: encrypted,
         },
     });
+}
+
+export async function createRoom(
+    name: string,
+    userId: string,
+) {
+    return prisma.room.create({
+        data: {
+            name: name,
+            userId: userId,
+        }
+    })
 }

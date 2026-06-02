@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { setupSocket } from "./socket";
 import path from "path";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import * as db from "./db";
 
@@ -17,7 +19,7 @@ declare global {
 
     namespace Express {
         interface Request {
-            userId?: string;
+            userId: string;
         }
     }
 }
@@ -35,7 +37,7 @@ declare module "jsonwebtoken" {
 
 const router = express.Router();
 
-router.post("/register", async (req, res) => {
+router.post("/auth/register", async (req, res) => {
     try {
         const { email, username, password } = req.body;
 
@@ -58,10 +60,10 @@ router.post("/register", async (req, res) => {
     }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/auth/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await db.findUser(email, password);
+        const user = await db.getUserByEmail(email, password);
 
         const token = jwt.sign(
             {
@@ -81,21 +83,13 @@ router.post("/login", async (req, res) => {
 });
 
 const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
-    const header = req.headers["authorization"];
+    const token = req.cookies.token;
 
-    if (!header) {
+    if (!token) {
         return res.status(404).json({
             error: "No token.",
         });
     }
-
-    if (!header.startsWith("Bearer ")) {
-        return res.status(404).json({
-            error: "Invalid token",
-        });
-    }
-
-    const token = header.substring(7);
 
     try {
         const decoded = <JwtPayload>jwt.verify(token, process.env.JWT_SECRET);
@@ -109,9 +103,29 @@ const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     next();
 };
 
-router.post("/room", jwtAuth, (req: Request, res) => {
-    console.log(`Success: ${JSON.stringify(req.userId)}`);
-    res.end();
+router.get("/auth/me", jwtAuth, async (req, res) => {
+    const user = await db.getUserById(req.userId);
+
+    if (!user) {
+        return res.status(404).json({
+            error: "User not found.",
+        });
+    }
+
+    return res.status(200).json(user);
+});
+
+router.post("/room", jwtAuth, async (req: Request, res) => {
+    try {
+        const {name, ...other} = req.body;
+        const room = await db.createRoom(name, req.userId);
+
+        return res.status(201).json({ data: room});
+    } catch (err) {
+        return res.status(500).json({
+            error: err
+        });
+    }
 });
 
 router.get(
@@ -138,10 +152,17 @@ const app = express();
 const server = createServer(app);
 const PORT = 8080;
 
+app.use(
+    cors({
+        origin: "http://localhost:5173",
+        credentials: true,
+    }),
+);
 app.use(express.json());
+app.use(cookieParser());
 app.use("/api", router);
 
-// setupSocket(server);
+setupSocket(server);
 
 server.listen(PORT, () => {
     console.log(`Listening on ${PORT}`);
