@@ -1,6 +1,6 @@
-import { Card, GameConfig } from '@shared/types';
-import type Konva from 'konva';
-import { Vector2d } from 'konva/lib/types';
+import { Card, GameConfig } from "@shared/types";
+import type Konva from "konva";
+import { Vector2d } from "konva/lib/types";
 
 export interface CardObject extends Konva.Image {
     dragStart: Vector2d;

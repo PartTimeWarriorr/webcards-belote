@@ -1,6 +1,5 @@
 import { roomJoin, roomReady } from "@/socket";
 
-let currentUser = null; // ??
 export function renderRoom() {
     const app = document.getElementById('app')!;
 

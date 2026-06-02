@@ -22,7 +22,6 @@ import {
     roomJoin,
     roomReadied,
     roomReady,
-    socket,
     startGame,
     updateGame,
     welcome,
@@ -33,10 +32,6 @@ let playerGameView: PlayerView | null = null;
 let localConfig: GameConfig | null = null;
 // let clientId: PlayerId | null = null;
 let clientId: PlayerId | undefined = undefined;
-
-socket.on("connect", () => {
-    clientId = socket.id;
-});
 
 function getSelectedBid(bid: string, gameView: PlayerView): Bid {
     switch (bid) {
@@ -263,7 +258,7 @@ export async function renderGame() {
         errorTab.textContent = err;
     });
 
-    roomJoin("Test");
+    // roomJoin("Test");
 }
 
 function rotateSeats(seats: Seats, playerId: string): Seats {
