@@ -1,24 +1,64 @@
-import { roomJoin, roomReady } from "@/socket";
+import {
+    roomJoin,
+    roomMessage,
+    roomMessaged,
+    roomReadied,
+    roomReady,
+} from "@/socket";
+import { PlayerId } from "@shared/types";
 
 export function renderRoom() {
-    const app = document.getElementById('app')!;
+    const app = document.getElementById("app")!;
 
     app.innerHTML = `
-            <div id="roomContainer">
-                <div id="chatBox"></div> 
-                <input type="checkbox" name="readyButton" id="readyButton" class="hidden">
-                <label for="readyButton" class="scoreboard-button btn-main">Ready</label>
+            <div id="roomContainer" class="room-container">
+                <div id="chatBox" class="chat-box">
+                </div> 
+                <input type="text" id="msgBox" class="input-box" placeholder="Text...">
+                <input type="checkbox" name="readyBtn" id="readyBtn" class="hidden">
+                <label for="readyBtn" class="scoreboard-button btn-main">Ready 0/4</label>
             </div>
     `;
 
-    const roomContainer = document.getElementById('roomContainer');
-    if (!roomContainer) throw new Error("Room container not found");
-    const readyButton: HTMLInputElement = roomContainer.querySelector('#readyButton')!;
+    const roomContainer = document.getElementById("roomContainer")!;
+    const readyBtn = document.getElementById("readyBtn") as HTMLInputElement;
 
-    readyButton.addEventListener('click', () => {
-        const isReady = readyButton.checked;
-        roomReady(isReady); 
+    readyBtn?.addEventListener("click", () => {
+        const isReady = readyBtn.checked;
+        roomReady(isReady);
     });
 
-    roomJoin("Game_1");
+    const chatBox = document.getElementById("chatBox");
+    const msgBox = document.getElementById("msgBox") as HTMLInputElement;
+
+    msgBox?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            roomMessage(msgBox.value.trim());
+            msgBox.value = "";
+        }
+    });
+
+    // roomMessaged((username, msg) => {
+    //     const elem = document.createElement('div');
+    //     elem.innerText = renderMessage(username, msg);
+    //     chatBox?.appendChild(elem);
+    // });
+
+    roomReadied((readyPlayers: PlayerId[]) => {
+        const count = readyPlayers.length;
+        displayReadyCount(count);
+        if (count === 4) {
+            roomJoin("Game_1");
+        }
+    });
+}
+
+function renderMessage(username: string, msg: string) {
+    return `<div class="chat-message">${username}:${msg}</div>`;
+}
+
+function displayReadyCount(count: number) {
+    const readyBtn = document.getElementById("readyBtn");
+    if (!readyBtn) return;
+    readyBtn.innerText = `Ready ${count}/4`;
 }

@@ -351,3 +351,44 @@ input:checked + label.btn-main {
     margin: 1rem;
     margin-top: auto;
 }
+
+.room-container {
+    margin-top: 8%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.room-container .btn-main {
+    text-align: center;
+}
+
+.chat-box {
+    overflow-y: scroll;
+    background-color: var(--btn-main-toggle);
+    box-sizing: border-box;
+    height: 50vh;
+    width: 70%;
+    margin: auto;
+    scrollbar-color: var(--btn-main-toggle) var(--background-light);
+}
+
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    margin: 1rem;
+    border-radius: 10px;
+    filter: drop-shadow(5px 5px 5px #57f269);
+    background-color: var(--background-light);
+    color: var(--btn-main-toggle);
+}
+
+.input-box {
+    width: 30vw;
+    padding: 1rem;
+    margin: 1rem;
+    background-color: var(--background-light);
+    color: var(--btn-main-toggle);
+    font-size: 1.5rem;
+}

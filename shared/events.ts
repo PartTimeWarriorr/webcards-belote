@@ -5,6 +5,7 @@ export interface ClientToServerEvents {
     "room:leave": (roomId: string) => void;
     "game:move": (move: Move) => void;
     "room:ready": (isReady: boolean) => void;
+    "room:message": (message: string) => void;
 }
 
 export interface ServerToClientEvents {
@@ -14,6 +15,7 @@ export interface ServerToClientEvents {
     "room:joined": (payload: RoomJoinedPayload) => void;
     "room:left": (payload: RoomJoinedPayload) => void;
     "room:readied": (readyPlayers: PlayerId[]) => void;
+    "room:messaged": (username: string, message: string) => void;
     "room:error": (msg: string) => void;
     "game:init": (payload: {config: GameConfig, view: PlayerView}) => void;
     "game:state": (payload: PlayerView) => void;

@@ -31,6 +31,10 @@ export function roomReady(isReady: boolean) {
     getSocket().emit("room:ready", isReady);
 }
 
+export function roomMessage(msg: string) {
+    getSocket().emit("room:message", msg);
+}
+
 // Server to Client
 export function welcome(callback: (playerId: string) => void) {
     getSocket().on("welcome", callback);
@@ -54,4 +58,8 @@ export function clientError(callback: (err: string) => void) {
 
 export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
     getSocket().on("room:readied", callback);
+}
+
+export function roomMessaged(callback: (username: string, msg: string) => void) {
+    getSocket().on("room:messaged", callback);
 }
