@@ -4,6 +4,7 @@ export interface ClientToServerEvents {
     "room:join": (roomId: string) => void;
     "room:leave": (roomId: string) => void;
     "game:move": (move: Move) => void;
+    "game:save": () => void;
     "room:ready": (isReady: boolean) => void;
     "room:message": (message: string) => void;
 }

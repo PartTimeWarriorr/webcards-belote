@@ -101,7 +101,7 @@ export function setupSocket(server: any) {
 
         socket.on("game:move", (move: Move) => {
             logger.logMove(move, socket.userId);
-            const room = roomManager.findRoomBySocket(socket.userId);
+            const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
                 socket.emit("client:error", "You're not in any room/game");
                 return;
@@ -133,8 +133,27 @@ export function setupSocket(server: any) {
             }
         });
 
+        socket.on("game:save", async () => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+            if (!room) {
+                socket.emit("client:error", "You're not in any room/game");
+                return;
+            }
+
+            if (!room.game) {
+                socket.emit("client:error", "No game started in this room");
+                return;
+            }
+
+            const replay = await room.game.saveReplay(socket.userId);
+            if (replay) {
+                socket.emit("game:log", "Replay saved!");
+                return;
+            }
+        });
+
         socket.on("room:ready", (isReady) => {
-            const room = roomManager.findRoomBySocket(socket.userId);
+            const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
                 socket.emit("client:error", "Not in any room");
                 return;
@@ -191,7 +210,7 @@ export function setupSocket(server: any) {
         });
 
         socket.on("disconnect", () => {
-            const room = roomManager.findRoomBySocket(socket.userId);
+            const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) return;
 
             try {

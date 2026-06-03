@@ -10,7 +10,7 @@ export class RoomManager {
         return this.rooms.get(roomName)!;
     }
 
-    findRoomBySocket(pid: PlayerId): Room | undefined {
+    findRoomByPlayerId(pid: PlayerId): Room | undefined {
         for (const r of this.rooms.values()) {
             if (r.players.has(pid)) return r;
         }

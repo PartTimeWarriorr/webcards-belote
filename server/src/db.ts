@@ -1,7 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Role, Room } from "../prisma/generated/client";
+import { PrismaClient, Replay, Role, Room } from "../prisma/generated/client";
 import { User } from "../prisma/generated/client";
 import bcrypt from "bcryptjs";
+import { GameState, Move } from "@shared/types";
 
 const connectionString = process.env["DATABASE_URL"];
 const adapter = new PrismaPg({ connectionString });
@@ -92,4 +93,18 @@ export async function createRoom(
             userId: userId,
         }
     })
+}
+
+export async function createReplay(
+    userId: string,
+    initState: GameState,
+    history: Array<Move>
+): Promise<Replay> {
+    return prisma.replay.create({
+        data: {
+            userId: userId,
+            initState: JSON.stringify(initState),
+            history: JSON.stringify(history)
+        }
+    });
 }

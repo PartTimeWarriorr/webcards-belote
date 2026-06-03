@@ -10,12 +10,15 @@ import {
 } from "@shared/types";
 import * as handlers from "./game-handlers";
 import { canPlay } from "./play-rules";
+import { createReplay } from "src/db";
+import { Replay } from "prisma/generated/client";
 
 export class Game {
     private state: GameState;
     private config: GameConfig;
 
-    private history: Array<GameState> = [];
+    private initialState: GameState;
+    private history: Array<Move> = [];
 
     constructor(config: GameConfig) {
         this.config = config;
@@ -23,6 +26,7 @@ export class Game {
         const result = this.applyMove({ type: "START_NEW_ROUND" });
         if (!result.ok) throw new Error(result.reason);
         this.state = result.state;
+        this.initialState = this.state;
     }
 
     getState() {
@@ -102,7 +106,7 @@ export class Game {
             }
         }
         if (result.ok) {
-            this.history.push(result.state);
+            this.history.push(move);
             this.state = result.state;
         }
 
@@ -116,7 +120,10 @@ export class Game {
                             this.state as BiddingState,
                             m.player,
                         );
-                        if (result.ok) this.state = result.state;
+                        if (result.ok) {
+                            this.history.push(move);
+                            this.state = result.state;
+                        }
                         break;
                     }
                     case "PLAY": {
@@ -126,7 +133,10 @@ export class Game {
                             m.player,
                             m.card,
                         );
-                        if (result.ok) this.state = result.state;
+                        if (result.ok) {
+                            this.history.push(move);
+                            this.state = result.state;
+                        }
                         break;
                     }
                 }
@@ -176,5 +186,9 @@ export class Game {
                 return { type: "PLAY", player: botId, card: card };
             }
         }
+    }
+
+    async saveReplay(userId: string): Promise<Replay>  {
+        return createReplay(userId, this.initialState, this.history);
     }
 }
