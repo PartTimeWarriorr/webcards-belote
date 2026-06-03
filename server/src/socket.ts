@@ -86,17 +86,17 @@ export function setupSocket(server: any) {
                 );
             }
 
-            if (room.isFull()) {
-                room.joinRandomTeams();
-                try {
-                    room.initGame();
-                    const state = room.getGameState();
-                    const config = room.getGameConfig();
-                    broadCastGameInit(io, state, config, room);
-                } catch (err) {
-                    io.to(room.name).emit("room:error", "Error starting game");
-                }
-            }
+            // if (room.isFull()) {
+            //     room.joinRandomTeams();
+            //     try {
+            //         room.initGame();
+            //         const state = room.getGameState();
+            //         const config = room.getGameConfig();
+            //         broadCastGameInit(io, state, config, room);
+            //     } catch (err) {
+            //         io.to(room.name).emit("room:error", "Error starting game");
+            //     }
+            // }
         });
 
         socket.on("game:move", (move: Move) => {
@@ -175,24 +175,45 @@ export function setupSocket(server: any) {
             );
 
             if (room.allReady()) {
-                if (!room.game) {
-                    socket.emit("client:error", "No game started");
-                    return;
-                }
+                room.resetReady();
 
-                if (room.isGameFinished()) {
-                    room.initRematch();
+                if (!room.game) {
+                    room.joinRandomTeams();
+                    room.initGame();
                     const state = room.getGameState();
                     const config = room.getGameConfig();
                     broadCastGameInit(io, state, config, room);
                     return;
                 }
 
-                const result = room.game.applyMove({ type: "START_NEW_ROUND" });
-                if (result.ok) {
-                    broadCastGameState(io, result.state, room);
+                if (room.isGameFinished()) {
+                    room.initGame();
+                    const state = room.getGameState();
+                    const config = room.getGameConfig();
+                    broadCastGameInit(io, state, config, room);
+                    return;
+                }
+
+                if (room.isGameScoring()) {
+                    const result = room.game.applyMove({
+                        type: "START_NEW_ROUND",
+                    });
+                    if (result.ok) {
+                        broadCastGameState(io, result.state, room);
+                    }
+                    return;
                 }
             }
+        });
+
+        socket.on("room:message", (msg: string) => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+            if (!room) {
+                socket.emit("client:error", "Player not in any room");
+                return;
+            }
+
+            io.to(room.name).emit("room:messaged", socket.userId, msg);
         });
 
         socket.on("room:leave", (roomId) => {

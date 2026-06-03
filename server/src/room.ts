@@ -48,6 +48,10 @@ export class Room {
         return this.readyPlayers.size === 4;
     }
 
+    resetReady() {
+        this.readyPlayers = new Set();
+    }
+
     getGameState(): GameState {
         if (!this.game) throw new Error("No game currently started");
 
@@ -57,6 +61,11 @@ export class Room {
     isGameFinished(): boolean {
         if (!this.game) throw new Error("No game started");
         return this.game.getState().phase === GamePhase.Finished;
+    }
+
+    isGameScoring(): boolean {
+        if (!this.game) throw new Error("No game started");
+        return this.game.getState().phase === GamePhase.Scoring;
     }
 
     getGameConfig(): GameConfig {
