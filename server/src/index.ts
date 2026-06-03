@@ -20,6 +20,7 @@ declare global {
     namespace Express {
         interface Request {
             userId: string;
+            username: string;
         }
     }
 }
@@ -32,6 +33,7 @@ type RoomsQuery = {
 declare module "jsonwebtoken" {
     export interface JwtPayload {
         userId: string;
+        username: string;
     }
 }
 
@@ -68,6 +70,7 @@ router.post("/auth/login", async (req, res) => {
         const token = jwt.sign(
             {
                 userId: user?.id,
+                username: user?.name,
             },
             process.env.JWT_SECRET,
             {
@@ -94,6 +97,7 @@ const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     try {
         const decoded = <JwtPayload>jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.userId;
+        req.username = decoded.username;
     } catch (err) {
         return res.status(404).json({
             error: "Invalid/expired token",

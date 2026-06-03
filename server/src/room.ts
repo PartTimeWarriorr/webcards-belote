@@ -2,9 +2,11 @@ import { Game } from "./game-core/game";
 import {
     FullTeam,
     GameConfig,
+    GameInitPayload,
     GamePhase,
     GameState,
     PlayerId,
+    PlayerProfile,
     Seats,
     Team,
     TeamId,
@@ -12,7 +14,8 @@ import {
 
 export class Room {
     name: string;
-    players: Set<PlayerId> = new Set();
+    // players: Set<PlayerId> = new Set();
+    players: Map<PlayerId, PlayerProfile> = new Map();
     team1: Team = [null, null];
     team2: Team = [null, null];
 
@@ -37,11 +40,11 @@ export class Room {
     }
 
     readyBots() {
-        Array.from(this.players)
-            .filter((p) => p.startsWith("bot"))
-            .forEach((b) => {
-                this.readyPlayers.add(b);
-            });
+        this.players.forEach(p => {
+            if (p.isBot) {
+                this.readyPlayers.add(p.userId);
+            }
+        });
     }
 
     allReady(): boolean {
@@ -50,6 +53,30 @@ export class Room {
 
     resetReady() {
         this.readyPlayers = new Set();
+    }
+
+    getGameConfig(): GameConfig {
+        return {
+            players: this.orderedSeats(),
+            teams: {
+                team1: this.team1,
+                team2: this.team2,
+            },
+        };
+    }
+
+    getGameInitPayload(): GameInitPayload {
+        return {
+            orderedPlayers: this.orderedSeats(),
+            playerProfiles: Array.from(this.players).reduce<Record<string, PlayerProfile>>((acc, [id, profile]) => {
+                acc[id] = profile;
+                return acc;
+            }, {}),
+            teams: {
+                team1: this.team1,
+                team2: this.team2,
+            },
+        };
     }
 
     getGameState(): GameState {
@@ -68,15 +95,6 @@ export class Room {
         return this.game.getState().phase === GamePhase.Scoring;
     }
 
-    getGameConfig(): GameConfig {
-        return {
-            players: this.orderedSeats(),
-            teams: {
-                team1: this.team1,
-                team2: this.team2,
-            },
-        };
-    }
 
     constructor(name: string, isBotRoom: boolean = false) {
         this.name = name;
@@ -96,9 +114,15 @@ export class Room {
         this.game = new Game(config);
     }
 
-    initRematch() {
-        // this.game stash history to DB
-        this.initGame();
+    abandonGame() {
+        this.resetTeams();
+        this.game = undefined;
+        this.botCount = 0;
+    }
+
+    resetTeams() {
+        this.team1 = [null, null];
+        this.team2 = [null, null];
     }
 
     isFull() {
@@ -118,14 +142,21 @@ export class Room {
         return [this.team1[0], this.team2[0], this.team1[1], this.team2[1]];
     }
 
-    join(player: PlayerId): boolean {
+    join(pid: PlayerId, username: string, isBot: boolean = false): boolean {
         if (this.isFull()) {
-            console.log(`Player ${player} cannot join full room ${this.name}`);
+            console.log(`Player ${pid} cannot join full room ${this.name}`);
             return false;
         }
 
-        this.players.add(player);
-        console.log(`Player ${player} joined room ${this.name}`);
+        const playerProfile: PlayerProfile = {
+            userId: pid,
+            username: username,
+            connected: true,
+            ready: false,
+            isBot: isBot
+        };
+        this.players.set(pid, playerProfile);
+        console.log(`Player ${pid} joined room ${this.name}`);
 
         return true;
     }
@@ -176,7 +207,7 @@ export class Room {
 
         this.players.forEach((p) => {
             const next = teams.splice(0, 1);
-            this.joinTeam(p, next[0] as TeamId);
+            this.joinTeam(p.userId, next[0] as TeamId);
         });
     }
 
@@ -185,7 +216,11 @@ export class Room {
     }
 
     addBot() {
-        const botId = "bot" + this.botCount++;
-        this.join(botId);
+        const botId = this.getNextBotId();
+        this.join(botId, botId.toUpperCase(), true);
+    }
+
+    getNextBotId() {
+        return "bot_" + this.botCount++; 
     }
 }

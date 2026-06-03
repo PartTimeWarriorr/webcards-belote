@@ -6,6 +6,7 @@ import {
     Bid,
     Card,
     GameConfig,
+    GameInitPayload,
     GameMode,
     GamePhase,
     Modifier,
@@ -30,7 +31,7 @@ import { getCardId } from "@/utils";
 import { userId } from "./room";
 
 let playerGameView: PlayerView | null = null;
-let localConfig: GameConfig | null = null;
+let localConfig: GameInitPayload | null = null;
 // let clientId: PlayerId | null = null;
 let clientId: PlayerId | undefined = undefined;
 
@@ -145,17 +146,17 @@ export async function renderGame() {
 
     let board = await Board.init(layer, dragLayer, stage);
 
-    startGame((payload: { config: GameConfig; view: PlayerView }) => {
+    startGame((payload: { gameInit: GameInitPayload, view: PlayerView }) => {
         console.log("START GAME RECEIVED");
-        localConfig = payload.config;
+        localConfig = payload.gameInit;
         playerGameView = payload.view;
         if (!clientId) {
             console.error("Missing player id");
             return;
         }
-        const rotated = rotateSeats(payload.config.players, clientId);
-        localConfig.players = rotated;
-        board.render(localConfig.players, playerGameView);
+        const rotated = rotateSeats(payload.gameInit.orderedPlayers, clientId);
+        localConfig.orderedPlayers = rotated;
+        board.render(localConfig.orderedPlayers, playerGameView);
 
         if (playerGameView.phase === GamePhase.Bidding) {
             if (!biddingMenu) {
@@ -180,7 +181,6 @@ export async function renderGame() {
         );
     });
 
-    // !!!switch here???
     updateGame((payload: PlayerView) => {
         playerGameView = payload;
         if (!clientId) {
@@ -191,7 +191,7 @@ export async function renderGame() {
             console.error("Missing config");
             return;
         }
-        board.render(localConfig?.players, playerGameView);
+        board.render(localConfig.orderedPlayers, playerGameView);
 
         if (biddingMenu) {
             biddingMenu.style.display =
@@ -289,7 +289,7 @@ function getAllyId(teams: Record<string, string>, playerId: string): string {
 
 function parseDebugInfo(
     id: string,
-    config: GameConfig,
+    gameInit: GameInitPayload,
     view: PlayerView,
     readyPlayers: number = 0,
 ): string {
@@ -300,9 +300,9 @@ function parseDebugInfo(
     `;
 }
 
-function parseAnnounceTab(clientId: PlayerId, config: GameConfig, gameView: PlayerView) {
-    const team1 = config.teams.team1; 
-    const team2 = config.teams.team2;
+function parseAnnounceTab(clientId: PlayerId, gameInit: GameInitPayload, gameView: PlayerView) {
+    const team1 = gameInit.teams.team1; 
+    const team2 = gameInit.teams.team2;
     const ownTeam = team1.includes(clientId) ? "team1" : (team2.includes(clientId) ? "team2" : ""); 
 
     return `

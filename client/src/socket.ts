@@ -7,6 +7,7 @@ import type {
 import {
     Card,
     GameConfig,
+    GameInitPayload,
     Move,
     PlayerId,
     PlayerView,
@@ -66,7 +67,7 @@ export function updateGame(callback: (payload: PlayerView) => void) {
 }
 
 export function startGame(
-    callback: (payload: { config: GameConfig; view: PlayerView }) => void,
+    callback: (payload: { gameInit: GameInitPayload; view: PlayerView }) => void,
 ) {
     getSocket().on("game:init", callback);
 }

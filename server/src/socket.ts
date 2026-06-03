@@ -8,6 +8,7 @@ import { ServerLogger } from "./server-log";
 import { Server } from "socket.io";
 import {
     GameConfig,
+    GameInitPayload,
     GamePhase,
     GameState,
     Move,
@@ -22,6 +23,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 declare module "socket.io" {
     export interface Socket {
         userId: string;
+        username: string;
     }
 }
 
@@ -60,6 +62,7 @@ export function setupSocket(server: any) {
                 jwt.verify(token, process.env.JWT_SECRET)
             );
             socket.userId = decoded.userId;
+            socket.username = decoded.username;
             next();
         } catch (err) {
             return next(new Error("Invalid token"));
@@ -71,7 +74,7 @@ export function setupSocket(server: any) {
         console.log(`${socket.userId} connected`);
         socket.on("room:join", (roomId) => {
             const room = roomManager.getRoom(roomId);
-            const joined = room.join(socket.userId);
+            const joined = room.join(socket.userId, socket.username);
 
             if (joined) {
                 socket.join(room.name);
@@ -85,18 +88,6 @@ export function setupSocket(server: any) {
                     "Couldn't join room: Room is full.",
                 );
             }
-
-            // if (room.isFull()) {
-            //     room.joinRandomTeams();
-            //     try {
-            //         room.initGame();
-            //         const state = room.getGameState();
-            //         const config = room.getGameConfig();
-            //         broadCastGameInit(io, state, config, room);
-            //     } catch (err) {
-            //         io.to(room.name).emit("room:error", "Error starting game");
-            //     }
-            // }
         });
 
         socket.on("game:move", (move: Move) => {
@@ -181,16 +172,16 @@ export function setupSocket(server: any) {
                     room.joinRandomTeams();
                     room.initGame();
                     const state = room.getGameState();
-                    const config = room.getGameConfig();
-                    broadCastGameInit(io, state, config, room);
+                    const gameInit = room.getGameInitPayload();
+                    broadCastGameInit(io, state, gameInit, room);
                     return;
                 }
 
                 if (room.isGameFinished()) {
                     room.initGame();
                     const state = room.getGameState();
-                    const config = room.getGameConfig();
-                    broadCastGameInit(io, state, config, room);
+                    const gameInit = room.getGameInitPayload();
+                    broadCastGameInit(io, state, gameInit, room);
                     return;
                 }
 
@@ -200,6 +191,8 @@ export function setupSocket(server: any) {
                     });
                     if (result.ok) {
                         broadCastGameState(io, result.state, room);
+                    } else {
+                        socket.emit("client:error", result.reason);
                     }
                     return;
                 }
@@ -252,7 +245,7 @@ function broadCastGameState(
     state: GameState,
     room: Room,
 ) {
-    for (const pid of room.players) {
+    for (const pid of room.players.keys()) {
         console.log(`Broadcast game state to ${pid}`);
         io.to(pid).emit("game:state", buildPlayerView(state, pid));
     }
@@ -261,13 +254,13 @@ function broadCastGameState(
 function broadCastGameInit(
     io: Server<ClientToServerEvents, ServerToClientEvents, any>,
     state: GameState,
-    config: GameConfig,
+    gameInit: GameInitPayload,
     room: Room,
 ) {
-    for (const pid of room.players) {
+    for (const pid of room.players.keys()) {
         console.log(`Broadcast config to ${pid}`);
         io.to(pid).emit("game:init", {
-            config: config,
+            gameInit: gameInit,
             view: buildPlayerView(state, pid),
         });
     }

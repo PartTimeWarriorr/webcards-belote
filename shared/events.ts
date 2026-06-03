@@ -1,4 +1,4 @@
-import { PlayerId, Bid, Card, PlayerView, RoomJoinedPayload, Move, GameConfig } from "./types";
+import { PlayerId, Bid, Card, PlayerView, RoomJoinedPayload, Move, GameConfig, GameInitPayload } from "./types";
 
 export interface ClientToServerEvents {
     "room:join": (roomId: string) => void;
@@ -18,7 +18,7 @@ export interface ServerToClientEvents {
     "room:readied": (readyPlayers: PlayerId[]) => void;
     "room:messaged": (username: string, message: string) => void;
     "room:error": (msg: string) => void;
-    "game:init": (payload: {config: GameConfig, view: PlayerView}) => void;
+    "game:init": (payload: {gameInit: GameInitPayload, view: PlayerView}) => void;
     "game:state": (payload: PlayerView) => void;
     "game:log": (msg: string) => void;
     "game:revertMove": (card: Card) => void;

@@ -54,6 +54,14 @@ export type PlayerView =
     | (Omit<ScoringState, "round"> & { round: PublicRoundState })
     | (Omit<FinishedState, "round"> & { round: PublicRoundState });
 
+export type PlayerProfile = {
+    userId: PlayerId,
+    username: string,
+    connected: boolean,
+    ready: boolean,
+    isBot: boolean,
+}
+
 export type PlayerId = string;
 export type PlayerSlot = PlayerId | null;
 export type Team = [PlayerSlot, PlayerSlot];
@@ -126,6 +134,15 @@ export interface GameConfig {
         team1: Team;
         team2: Team;
     };
+}
+
+export interface GameInitPayload {
+    orderedPlayers: [PlayerId, PlayerId, PlayerId, PlayerId];
+    playerProfiles: Record<string, PlayerProfile>;
+    teams: {
+        team1: Team;
+        team2: Team;
+    }
 }
 
 export type Result<T> = { ok: true; state: T } | { ok: false; reason: string };
