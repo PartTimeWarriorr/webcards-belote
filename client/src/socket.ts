@@ -15,73 +15,73 @@ import {
 } from "@shared/types";
 
 const SERVER_URL = "http://localhost:8080";
-let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
-function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
-    // if (!token) {
-    //     throw new Error("No token provided");
-    // }
-    if (!socket) {
-        socket = io(SERVER_URL, {
-            withCredentials: true,
-            transports: ["websocket"],
-            // auth: {
-            //     token: token,
-            // },
-        });
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
+    withCredentials: true,
+    transports: ["websocket"],
+    autoConnect: false,
+});
+
+export function connectSocket() {
+    if (!socket.connected)
+        socket.connect();
+}
+
+export function disconnectSocket() {
+    if (socket.connected) {
+        socket.disconnect();
     }
-    return socket;
 }
 
 // Client to Server
 export function roomJoin(roomId: string) {
-    getSocket().emit("room:join", roomId);
+    socket.emit("room:join", roomId);
 }
 
 export function roomLeave(roomId: string) {
-    getSocket().emit("room:leave", roomId);
+    socket.emit("room:leave", roomId);
 }
 
 export function gameMove(move: Move) {
-    getSocket().emit("game:move", move);
+    socket.emit("game:move", move);
 }
 
 export function roomReady(isReady: boolean) {
-    getSocket().emit("room:ready", isReady);
+    socket.emit("room:ready", isReady);
 }
 
 export function roomMessage(msg: string) {
-    getSocket().emit("room:message", msg);
+    socket.emit("room:message", msg);
 }
 
 // Server to Client
 export function welcome(callback: (playerId: string) => void) {
-    getSocket().on("welcome", callback);
+    socket.on("welcome", callback);
 }
 
 export function roomJoined(callback: (payload: RoomJoinedPayload) => void) {
-    getSocket().on("room:joined", callback);
+    socket.on("room:joined", callback);
 }
 
 export function updateGame(callback: (payload: PlayerView) => void) {
-    getSocket().on("game:state", callback);
+    socket.on("game:state", callback);
 }
 
 export function startGame(
     callback: (payload: { gameInit: GameInitPayload; view: PlayerView }) => void,
 ) {
-    getSocket().on("game:init", callback);
+    socket.on("game:init", callback);
 }
 
 export function clientError(callback: (err: string) => void) {
-    getSocket().on("client:error", callback);
+    socket.on("client:error", callback);
 }
 
 export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
-    getSocket().on("room:readied", callback);
+    socket.on("room:readied", callback);
 }
 
 export function roomMessaged(
     callback: (username: string, msg: string) => void,
 ) {
-    getSocket().on("room:messaged", callback);
+    socket.on("room:messaged", callback);
 }

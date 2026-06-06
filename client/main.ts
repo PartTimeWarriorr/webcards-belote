@@ -14,8 +14,4 @@ async function render() {
     if (currentPage === "game") await renderGame();
 }
 
-// function renderRooms() {
-//     const app = document.getElementById("app")!;
-// }
-
 render();

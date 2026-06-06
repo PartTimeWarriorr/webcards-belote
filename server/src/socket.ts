@@ -206,7 +206,7 @@ export function setupSocket(server: any) {
                 return;
             }
 
-            io.to(room.name).emit("room:messaged", socket.userId, msg);
+            io.to(room.name).emit("room:messaged", socket.username, msg);
         });
 
         socket.on("room:leave", (roomId) => {

@@ -1,7 +1,7 @@
-import { roomJoined, roomJoin, startGame } from "../src/socket";
+import { roomJoined, roomJoin, startGame, connectSocket } from "../src/socket";
 import { navigate } from "../main";
-import { GameConfig } from "@shared/types";
-import { createRoom, getLocalUser, getRooms, getUser, login, register, Room, setUser, User } from "@/auth";
+import { GameConfig, RoomJoinedPayload } from "@shared/types";
+import { createRoom, getLocalUser, getRooms, getUser, login, register, Room, setUser, User } from "@/api";
 
 export async function renderHome() {
     const user = getLocalUser();
@@ -85,8 +85,8 @@ async function renderLoggedIn(user: User) {
         try {
             const response = await createRoom({name: name});
             console.log(`Room ${response.data.name} created successfully`);
+            connectSocket();
             roomJoin(name);
-            await navigate("room");
         } catch (err) {
             console.error(err);
         }
@@ -121,7 +121,11 @@ async function renderLoggedIn(user: User) {
             console.error("Cannot join");
             return;
         }
+        connectSocket();
         roomJoin(name);
+    });
+
+    roomJoined(async (payload: RoomJoinedPayload) => {
         await navigate("room");
     });
 }

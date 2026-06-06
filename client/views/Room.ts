@@ -9,6 +9,11 @@ import {
 import { PlayerId } from "@shared/types";
 import { navigate } from "../main";
 
+interface RoomViewElements {
+    chatBox: HTMLElement;
+    msgBox: HTMLInputElement;
+    readyBtn: HTMLInputElement
+};
 export let userId: PlayerId | undefined = undefined;
 
 export function renderRoom() {
@@ -24,30 +29,47 @@ export function renderRoom() {
             </div>
     `;
 
-    const roomContainer = document.getElementById("roomContainer")!;
-    const readyBtn = document.getElementById("readyBtn") as HTMLInputElement;
+    const elements: RoomViewElements = {
+        chatBox: document.getElementById("chatBox")!,
+        msgBox: document.getElementById("msgBox")! as HTMLInputElement,
+        readyBtn: document.getElementById("readyBtn")! as HTMLInputElement,
+    }
 
-    readyBtn?.addEventListener("click", () => {
-        const isReady = readyBtn.checked;
+    attachDomListeners(elements);
+    attachSocketListeners(elements);
+}
+
+function displayReadyCount(count: number) {
+    const readyBtn = document.getElementById("readyBtn");
+    if (!readyBtn) return;
+    readyBtn.innerText = `Ready ${count}/4`;
+}
+
+function attachDomListeners(elements: RoomViewElements) {
+    elements.readyBtn.addEventListener("click", () => {
+        const isReady = elements.readyBtn.checked;
         roomReady(isReady);
     });
 
-    const chatBox = document.getElementById("chatBox");
-    const msgBox = document.getElementById("msgBox") as HTMLInputElement;
-
-    msgBox?.addEventListener("keydown", (e) => {
+    elements.msgBox.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-            roomMessage(msgBox.value.trim());
-            msgBox.value = "";
+            roomMessage(elements.msgBox.value.trim());
+            elements.msgBox.value = "";
         }
     });
+}
 
-    // roomMessaged((username, msg) => {
-    //     const elem = document.createElement('div');
-    //     elem.innerText = renderMessage(username, msg);
-    //     chatBox?.appendChild(elem);
-    // });
+function attachSocketListeners(elements: RoomViewElements) {
+    roomMessaged((username, msg) => {
+        console.log(username, msg);
+        const elem = document.createElement('div');
+        elem.className = "chat-message";
+        elem.innerText = `${username}: ${msg}`;
+        elements.chatBox.appendChild(elem);
+        elements.chatBox.lastElementChild?.scrollIntoView(true);
+    });
 
+    // TODO: change
     roomReadied(async (readyPlayers: PlayerId[]) => {
         const count = readyPlayers.length;
         displayReadyCount(count);
@@ -60,14 +82,4 @@ export function renderRoom() {
         userId = id;
         console.log(userId);
     });
-}
-
-function renderMessage(username: string, msg: string) {
-    return `<div class="chat-message">${username}:${msg}</div>`;
-}
-
-function displayReadyCount(count: number) {
-    const readyBtn = document.getElementById("readyBtn");
-    if (!readyBtn) return;
-    readyBtn.innerText = `Ready ${count}/4`;
 }
