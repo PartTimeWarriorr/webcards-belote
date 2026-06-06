@@ -227,8 +227,14 @@ export function setupSocket(server: any) {
             io.to(room.name).emit("room:messaged", socket.username, msg);
         });
 
-        socket.on("room:leave", (roomId) => {
-            const room = roomManager.getRoom(roomId);
+        socket.on("room:leave", () => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+
+            if (!room) {
+                socket.emit("client:error", "Player not in any room");
+                return;
+            }
+
             try {
                 room.leave(socket.userId);
             } catch (err) {

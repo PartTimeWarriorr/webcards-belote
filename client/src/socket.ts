@@ -15,7 +15,7 @@ import {
 } from "@shared/types";
 
 const SERVER_URL = "http://localhost:8080";
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
     withCredentials: true,
     transports: ["websocket"],
     autoConnect: false,
@@ -37,8 +37,8 @@ export function roomJoin(roomId: string) {
     socket.emit("room:join", roomId);
 }
 
-export function roomLeave(roomId: string) {
-    socket.emit("room:leave", roomId);
+export function roomLeave() {
+    socket.emit("room:leave");
 }
 
 export function gameMove(move: Move) {

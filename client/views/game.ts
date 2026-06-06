@@ -24,12 +24,14 @@ import {
     roomJoin,
     roomReadied,
     roomReady,
+    socket,
     startGame,
     updateGame,
     welcome,
 } from "@/socket";
 import { getCardId } from "@/utils";
 import { userId } from "./home";
+import { View } from "./view";
 
 interface GameViewElements {
     scoreboard: HTMLElement;
@@ -49,10 +51,11 @@ interface GameViewState {
     clientId: PlayerId | undefined;
 }
 
-export async function renderGame() {
-    console.log("Rendering game...");
-    const app = document.getElementById("app")!;
-    app.innerHTML = `
+export class GameView extends View<GameViewElements, GameViewState> {
+    async render() {
+        console.log("Rendering game...");
+        const app = document.getElementById("app")!;
+        app.innerHTML = `
         <div id="biddingMenu" class="gamemode-modal">
             <div class="mode-btn btn-club" name="C"></div>
             <div class="mode-btn btn-diamond" name="D"></div>
@@ -74,305 +77,311 @@ export async function renderGame() {
     <div id="container"></div>
         `;
 
-    const stage = new Konva.Stage({
-        container: "container",
-        width: window.innerWidth,
-        height: window.innerHeight,
-    });
-
-    const layer = new Konva.Layer();
-    const dragLayer = new Konva.Layer();
-
-    const elements: GameViewElements = {
-        scoreboard: document.getElementById("scoreBoard")!,
-        winScreen: document.getElementById("winScreen")!,
-        announceTab: document.getElementById("announceTab")!,
-        passButton: document.getElementById("passBtn")!,
-        debugBoard: document.getElementById("debugBoard")!,
-        biddingMenu: document.getElementById("biddingMenu")!,
-        modeButtons: document.querySelectorAll(".mode-btn")!,
-        errorTab: document.getElementById("errors")!,
-        board: await Board.init(layer, dragLayer, stage),
-    };
-
-    const viewState: GameViewState = {
-        playerGameView: null,
-        localConfig: null,
-        clientId: userId,
-    };
-
-    attachDomListeners(elements, viewState);
-    attachSocketListeners(elements, viewState);
-    console.log("Gameview built");
-    gameSync();
-}
-
-function attachDomListeners(
-    elements: GameViewElements,
-    viewState: GameViewState,
-) {
-    elements.modeButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const name = btn.getAttribute("name");
-            if (!name || !viewState.clientId || !viewState.playerGameView)
-                return;
-            gameMove({
-                type: "BID",
-                player: viewState.clientId,
-                bid: getSelectedBid(name, viewState.playerGameView),
-            });
+        const stage = new Konva.Stage({
+            container: "container",
+            width: window.innerWidth,
+            height: window.innerHeight,
         });
-    });
-    elements.passButton.addEventListener("click", () => {
-        if (!viewState.clientId) return;
-        gameMove({
-            type: "PASS",
-            player: viewState.clientId,
-        });
-    });
-}
 
-function attachSocketListeners(
-    elements: GameViewElements,
-    viewState: GameViewState,
-) {
-    startGame((payload: { gameInit: GameInitPayload; view: PlayerView }) => {
-        console.log("Init received");
-        viewState.localConfig = payload.gameInit;
-        viewState.playerGameView = payload.view;
-        console.log(viewState.localConfig);
-        if (!viewState.clientId) {
-            console.error("Missing player id");
-            return;
-        }
-        const rotated = rotateSeats(
-            payload.gameInit.orderedPlayers,
-            viewState.clientId,
-        );
-        viewState.localConfig.orderedPlayers = rotated;
-        elements.board.render(
-            viewState.localConfig.orderedPlayers,
-            viewState.playerGameView,
-        );
+        const layer = new Konva.Layer();
+        const dragLayer = new Konva.Layer();
 
-        if (viewState.playerGameView.phase === GamePhase.Bidding) {
-            if (!elements.biddingMenu) {
-                console.error("Missing menu");
-                return;
-            }
-            elements.biddingMenu.style.display =
-                viewState.playerGameView.currentBidder === viewState.clientId
-                    ? "grid"
-                    : "none";
-        } else {
-            if (!elements.biddingMenu) {
-                console.error("Missing menu");
-                return;
-            }
-            elements.biddingMenu.style.display = "none";
-        }
+        this.elements = {
+            scoreboard: document.getElementById("scoreBoard")!,
+            winScreen: document.getElementById("winScreen")!,
+            announceTab: document.getElementById("announceTab")!,
+            passButton: document.getElementById("passBtn")!,
+            debugBoard: document.getElementById("debugBoard")!,
+            biddingMenu: document.getElementById("biddingMenu")!,
+            modeButtons: document.querySelectorAll(".mode-btn")!,
+            errorTab: document.getElementById("errors")!,
+            board: await Board.init(layer, dragLayer, stage),
+        };
 
-        if (!elements.debugBoard) return;
-        elements.debugBoard.textContent = parseDebugInfo(
-            viewState.clientId,
-            viewState.localConfig,
-            viewState.playerGameView,
-        );
-    });
+        this.viewState = {
+            playerGameView: null,
+            localConfig: null,
+            clientId: userId,
+        };
 
-    updateGame((payload: PlayerView) => {
-        console.log(payload);
-        viewState.playerGameView = payload;
-        if (!viewState.clientId) {
-            console.error("Missing player id");
-            return;
-        }
-        console.log(viewState.localConfig);
-        if (!viewState.localConfig) {
-            console.error("Missing config");
-            return;
-        }
-        elements.board.render(
-            viewState.localConfig.orderedPlayers,
-            viewState.playerGameView,
-        );
-
-        if (elements.biddingMenu) {
-            elements.biddingMenu.style.display =
-                viewState.playerGameView.phase === GamePhase.Bidding &&
-                viewState.playerGameView.currentBidder === viewState.clientId
-                    ? "grid"
-                    : "none";
-        } else {
-            console.error("Missing bidding menu");
-        }
-
-        if (elements.scoreboard) {
-            elements.scoreboard.style.display =
-                viewState.playerGameView.phase === GamePhase.Scoring
-                    ? "block"
-                    : "none";
-        } else {
-            console.error("Missing scoreboard");
-        }
-
-        if (elements.winScreen) {
-            elements.winScreen.style.display =
-                viewState.playerGameView.phase === GamePhase.Finished
-                    ? "block"
-                    : "none";
-        } else {
-            console.error("Missing win screen");
-        }
-
-        if (viewState.playerGameView.phase === GamePhase.Scoring) {
-            renderScoreboard(viewState.playerGameView);
-        } else if (viewState.playerGameView.phase === GamePhase.Finished) {
-            renderWinscreen(viewState.playerGameView);
-        }
-
-        if (elements.announceTab) {
-            elements.announceTab.textContent = parseAnnounceTab(
-                viewState.clientId,
-                viewState.localConfig,
-                viewState.playerGameView,
-            );
-        } else {
-            console.error("Missing announcements tab");
-        }
-
-        if (elements.debugBoard) {
-            elements.debugBoard.textContent = parseDebugInfo(
-                viewState.clientId,
-                viewState.localConfig,
-                viewState.playerGameView,
-            );
-        } else {
-            console.error("Missing debug board");
-        }
-    });
-
-    roomReadied((readyPlayers: PlayerId[]) => {
-        if (
-            !viewState.clientId ||
-            !viewState.localConfig ||
-            !viewState.playerGameView
-        )
-            return;
-        if (elements.debugBoard) {
-            elements.debugBoard.textContent = parseDebugInfo(
-                viewState.clientId,
-                viewState.localConfig,
-                viewState.playerGameView,
-                readyPlayers.length,
-            );
-        } else {
-            console.error("Missing debug board");
-        }
-        if (readyPlayers.length === 4) {
-            gameSync();
-        }
-    });
-
-    clientError((err: string) => {
-        if (!elements.errorTab) {
-            console.log(err);
-            return;
-        }
-        elements.errorTab.textContent = err;
-    });
-}
-
-function rotateSeats(seats: Seats, playerId: string): Seats {
-    // Rotate the player positions so player is at south
-    const playerIndex = seats.findIndex((id) => id === playerId);
-    const rotated = [
-        ...seats.slice(playerIndex),
-        ...seats.slice(0, playerIndex),
-    ];
-    if (rotated.length !== 4) {
-        throw new Error("Invalid seats");
+        console.log("Gameview built");
     }
 
-    return rotated as Seats;
-}
+    attachDomListeners(): void {
+        this.elements.modeButtons.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const name = btn.getAttribute("name");
+                if (
+                    !name ||
+                    !this.viewState.clientId ||
+                    !this.viewState.playerGameView
+                )
+                    return;
+                gameMove({
+                    type: "BID",
+                    player: this.viewState.clientId,
+                    bid: this.getSelectedBid(
+                        name,
+                        this.viewState.playerGameView,
+                    ),
+                });
+            });
+        });
+        this.elements.passButton.addEventListener("click", () => {
+            if (!this.viewState.clientId) return;
+            gameMove({
+                type: "PASS",
+                player: this.viewState.clientId,
+            });
+        });
+    }
 
-function getAllyId(teams: Record<string, string>, playerId: string): string {
-    const team = teams[playerId];
-    const allyId = Object.keys(teams).find(
-        (id) => teams[id] === team && id !== playerId,
-    );
-    if (!allyId) throw new Error("No ally found");
-    return allyId;
-}
+    attachSocketListeners(): void {
+        startGame(
+            (payload: { gameInit: GameInitPayload; view: PlayerView }) => {
+                console.log("Init received");
+                this.viewState.localConfig = payload.gameInit;
+                this.viewState.playerGameView = payload.view;
+                console.log(this.viewState.localConfig);
+                if (!this.viewState.clientId) {
+                    console.error("Missing player id");
+                    return;
+                }
+                const rotated = this.rotateSeats(
+                    payload.gameInit.orderedPlayers,
+                    this.viewState.clientId,
+                );
+                this.viewState.localConfig.orderedPlayers = rotated;
+                this.elements.board.render(
+                    this.viewState.localConfig.orderedPlayers,
+                    this.viewState.playerGameView,
+                );
 
-function parseDebugInfo(
-    id: string,
-    gameInit: GameInitPayload,
-    view: PlayerView,
-    readyPlayers: number = 0,
-): string {
-    return `
+                if (this.viewState.playerGameView.phase === GamePhase.Bidding) {
+                    if (!this.elements.biddingMenu) {
+                        console.error("Missing menu");
+                        return;
+                    }
+                    this.elements.biddingMenu.style.display =
+                        this.viewState.playerGameView.currentBidder ===
+                        this.viewState.clientId
+                            ? "grid"
+                            : "none";
+                } else {
+                    if (!this.elements.biddingMenu) {
+                        console.error("Missing menu");
+                        return;
+                    }
+                    this.elements.biddingMenu.style.display = "none";
+                }
+
+                if (!this.elements.debugBoard) return;
+                this.elements.debugBoard.textContent = this.parseDebugInfo(
+                    this.viewState.clientId,
+                    this.viewState.localConfig,
+                    this.viewState.playerGameView,
+                );
+            },
+        );
+
+        updateGame((payload: PlayerView) => {
+            console.log(payload);
+            this.viewState.playerGameView = payload;
+            if (!this.viewState.clientId) {
+                console.error("Missing player id");
+                return;
+            }
+            console.log(this.viewState.localConfig);
+            if (!this.viewState.localConfig) {
+                console.error("Missing config");
+                return;
+            }
+            this.elements.board.render(
+                this.viewState.localConfig.orderedPlayers,
+                this.viewState.playerGameView,
+            );
+
+            if (this.elements.biddingMenu) {
+                this.elements.biddingMenu.style.display =
+                    this.viewState.playerGameView.phase === GamePhase.Bidding &&
+                    this.viewState.playerGameView.currentBidder ===
+                        this.viewState.clientId
+                        ? "grid"
+                        : "none";
+            } else {
+                console.error("Missing bidding menu");
+            }
+
+            if (this.elements.scoreboard) {
+                this.elements.scoreboard.style.display =
+                    this.viewState.playerGameView.phase === GamePhase.Scoring
+                        ? "block"
+                        : "none";
+            } else {
+                console.error("Missing scoreboard");
+            }
+
+            if (this.elements.winScreen) {
+                this.elements.winScreen.style.display =
+                    this.viewState.playerGameView.phase === GamePhase.Finished
+                        ? "block"
+                        : "none";
+            } else {
+                console.error("Missing win screen");
+            }
+
+            if (this.viewState.playerGameView.phase === GamePhase.Scoring) {
+                this.renderScoreboard(this.viewState.playerGameView);
+            } else if (
+                this.viewState.playerGameView.phase === GamePhase.Finished
+            ) {
+                this.renderWinscreen(this.viewState.playerGameView);
+            }
+
+            if (this.elements.announceTab) {
+                this.elements.announceTab.textContent = this.parseAnnounceTab(
+                    this.viewState.clientId,
+                    this.viewState.localConfig,
+                    this.viewState.playerGameView,
+                );
+            } else {
+                console.error("Missing announcements tab");
+            }
+
+            if (this.elements.debugBoard) {
+                this.elements.debugBoard.textContent = this.parseDebugInfo(
+                    this.viewState.clientId,
+                    this.viewState.localConfig,
+                    this.viewState.playerGameView,
+                );
+            } else {
+                console.error("Missing debug board");
+            }
+        });
+
+        roomReadied((readyPlayers: PlayerId[]) => {
+            if (
+                !this.viewState.clientId ||
+                !this.viewState.localConfig ||
+                !this.viewState.playerGameView
+            )
+                return;
+            if (this.elements.debugBoard) {
+                this.elements.debugBoard.textContent = this.parseDebugInfo(
+                    this.viewState.clientId,
+                    this.viewState.localConfig,
+                    this.viewState.playerGameView,
+                    readyPlayers.length,
+                );
+            } else {
+                console.error("Missing debug board");
+            }
+            if (readyPlayers.length === 4) {
+                gameSync();
+            }
+        });
+
+        clientError((err: string) => {
+            if (!this.elements.errorTab) {
+                console.log(err);
+                return;
+            }
+            this.elements.errorTab.textContent = err;
+        });
+
+        gameSync();
+    }
+
+    detachDomListeners(): void {}
+
+    detachSocketListeners(): void {
+        socket.off("game:init");
+        socket.off("game:state");
+        socket.off("room:readied");
+        socket.off("client:error");
+    }
+
+    private rotateSeats(seats: Seats, playerId: string): Seats {
+        // Rotate the player positions so player is at south
+        const playerIndex = seats.findIndex((id) => id === playerId);
+        const rotated = [
+            ...seats.slice(playerIndex),
+            ...seats.slice(0, playerIndex),
+        ];
+        if (rotated.length !== 4) {
+            throw new Error("Invalid seats");
+        }
+
+        return rotated as Seats;
+    }
+
+    private parseDebugInfo(
+        id: string,
+        gameInit: GameInitPayload,
+        view: PlayerView,
+        readyPlayers: number = 0,
+    ): string {
+        return `
         clientId: ${id} \n
         ${JSON.stringify(view)} \n
         readied: ${readyPlayers}/4
     `;
-}
+    }
 
-function parseAnnounceTab(
-    clientId: PlayerId,
-    gameInit: GameInitPayload,
-    gameView: PlayerView,
-) {
-    const team1 = gameInit.teams.team1;
-    const team2 = gameInit.teams.team2;
-    const ownTeam = team1.includes(clientId)
-        ? "team1"
-        : team2.includes(clientId)
-          ? "team2"
-          : "";
+    private parseAnnounceTab(
+        clientId: PlayerId,
+        gameInit: GameInitPayload,
+        gameView: PlayerView,
+    ) {
+        const team1 = gameInit.teams.team1;
+        const team2 = gameInit.teams.team2;
+        const ownTeam = team1.includes(clientId)
+            ? "team1"
+            : team2.includes(clientId)
+              ? "team2"
+              : "";
 
-    return `
+        return `
         Team 1: \n
         ${team1.map((p) => {
             if (!p) return;
             p in gameView.round.announcements
-                ? `${p}: ${gameView.round.announcements[p].map((a) => parseAnnouncement(a, "team1" === ownTeam)).join(", ")}`
+                ? `${p}: ${gameView.round.announcements[p].map((a) => this.parseAnnouncement(a, "team1" === ownTeam)).join(", ")}`
                 : "";
         })} \n
         Team 2: \n
         ${team2.map((p) => {
             if (!p) return;
             p in gameView.round.announcements
-                ? `${p}: ${gameView.round.announcements[p].map((a) => parseAnnouncement(a, "team2" === ownTeam)).join(", ")}`
+                ? `${p}: ${gameView.round.announcements[p].map((a) => this.parseAnnouncement(a, "team2" === ownTeam)).join(", ")}`
                 : "";
         })}
     `;
-}
+    }
 
-function parseAnnouncement(announcement: Announcement, ownTeam: boolean) {
-    switch (announcement.type) {
-        case AnnouncementType.Square: {
-            return ownTeam ? `Square ${announcement.rank}` : "Square";
-        }
-        case AnnouncementType.Tierce:
-        case AnnouncementType.Quarte:
-        case AnnouncementType.Quinte: {
-            return ownTeam
-                ? `${announcement.type} ${announcement.suit} up to ${announcement.highestCard}`
-                : `${announcement.type}`;
-        }
-        case AnnouncementType.Belot: {
-            return `${announcement.type} ${announcement.suit}`;
+    private parseAnnouncement(announcement: Announcement, ownTeam: boolean) {
+        switch (announcement.type) {
+            case AnnouncementType.Square: {
+                return ownTeam ? `Square ${announcement.rank}` : "Square";
+            }
+            case AnnouncementType.Tierce:
+            case AnnouncementType.Quarte:
+            case AnnouncementType.Quinte: {
+                return ownTeam
+                    ? `${announcement.type} ${announcement.suit} up to ${announcement.highestCard}`
+                    : `${announcement.type}`;
+            }
+            case AnnouncementType.Belot: {
+                return `${announcement.type} ${announcement.suit}`;
+            }
         }
     }
-}
 
-function renderScoreboard(gameView: PlayerView) {
-    const scoreboard = document.getElementById("scoreBoard")!;
+    private renderScoreboard(gameView: PlayerView) {
+        const scoreboard = document.getElementById("scoreBoard")!;
 
-    if (gameView.phase !== GamePhase.Scoring) return;
-    scoreboard.innerHTML = `
+        if (gameView.phase !== GamePhase.Scoring) return;
+        scoreboard.innerHTML = `
                 <p class="scoreboard-title">Total scores</p>
                 <div class="scores-grid">
                     <div class="scores-column">
@@ -412,21 +421,20 @@ function renderScoreboard(gameView: PlayerView) {
                 >
     `;
 
-    const readyButton: HTMLInputElement =
-        scoreboard.querySelector("#readyButton")!;
+        const readyButton: HTMLInputElement =
+            scoreboard.querySelector("#readyButton")!;
 
-    readyButton.addEventListener("click", () => {
-        const isReady = readyButton.checked;
-        roomReady(isReady);
-    });
-}
+        readyButton.addEventListener("click", () => {
+            const isReady = readyButton.checked;
+            roomReady(isReady);
+        });
+    }
+    private renderWinscreen(gameView: PlayerView) {
+        const winScreen = document.getElementById("winScreen")!;
 
-function renderWinscreen(gameView: PlayerView) {
-    const winScreen = document.getElementById("winScreen")!;
+        if (gameView.phase !== GamePhase.Finished) return;
 
-    if (gameView.phase !== GamePhase.Finished) return;
-
-    winScreen.innerHTML = `
+        winScreen.innerHTML = `
                 <p class="scoreboard-title">${gameView.winningTeam} wins!</p>
                 <div class="scores-grid">
                     <div class="scores-column">
@@ -466,48 +474,49 @@ function renderWinscreen(gameView: PlayerView) {
                 >
     `;
 
-    const readyButton: HTMLInputElement =
-        winScreen.querySelector("#readyButton")!;
+        const readyButton: HTMLInputElement =
+            winScreen.querySelector("#readyButton")!;
 
-    readyButton.addEventListener("click", () => {
-        const isReady = readyButton.checked;
-        roomReady(isReady);
-    });
-}
-
-function getSelectedBid(bid: string, gameView: PlayerView): Bid {
-    switch (bid) {
-        case "C":
-        case "D":
-        case "H":
-        case "S": {
-            return { mode: GameMode.TRUMP, trump: bid as Suit };
-        }
-        case "NT": {
-            return { mode: GameMode.NO_TRUMP };
-        }
-        case "AT": {
-            return { mode: GameMode.ALL_TRUMP };
-        }
-        case "x2": {
-            if (gameView.phase !== GamePhase.Bidding)
-                throw new Error("Not in bidding phase");
-            if (!gameView.highestBid) throw new Error("Cannot x2");
-            return {
-                ...gameView.highestBid?.[1],
-                modifier: Modifier.x2,
-            } as Bid;
-        }
-        case "x4": {
-            if (gameView.phase !== GamePhase.Bidding)
-                throw new Error("Not in bidding phase");
-            if (!gameView.highestBid) throw new Error("Cannot x4");
-            return {
-                ...gameView.highestBid?.[1],
-                modifier: Modifier.x4,
-            } as Bid;
-        }
+        readyButton.addEventListener("click", () => {
+            const isReady = readyButton.checked;
+            roomReady(isReady);
+        });
     }
 
-    return {} as Bid;
+    private getSelectedBid(bid: string, gameView: PlayerView): Bid {
+        switch (bid) {
+            case "C":
+            case "D":
+            case "H":
+            case "S": {
+                return { mode: GameMode.TRUMP, trump: bid as Suit };
+            }
+            case "NT": {
+                return { mode: GameMode.NO_TRUMP };
+            }
+            case "AT": {
+                return { mode: GameMode.ALL_TRUMP };
+            }
+            case "x2": {
+                if (gameView.phase !== GamePhase.Bidding)
+                    throw new Error("Not in bidding phase");
+                if (!gameView.highestBid) throw new Error("Cannot x2");
+                return {
+                    ...gameView.highestBid?.[1],
+                    modifier: Modifier.x2,
+                } as Bid;
+            }
+            case "x4": {
+                if (gameView.phase !== GamePhase.Bidding)
+                    throw new Error("Not in bidding phase");
+                if (!gameView.highestBid) throw new Error("Cannot x4");
+                return {
+                    ...gameView.highestBid?.[1],
+                    modifier: Modifier.x4,
+                } as Bid;
+            }
+        }
+
+        return {} as Bid;
+    }
 }

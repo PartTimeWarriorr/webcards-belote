@@ -1,26 +1,35 @@
 import {
     gameSync,
     roomJoin,
+    roomLeave,
     roomMessage,
     roomMessaged,
     roomReadied,
     roomReady,
+    socket,
     welcome,
 } from "@/socket";
 import { PlayerId } from "@shared/types";
 import { navigate } from "../main";
+import { View } from "./view";
 
 interface RoomViewElements {
     chatBox: HTMLElement;
     msgBox: HTMLInputElement;
-    readyBtn: HTMLInputElement
-};
+    readyBtn: HTMLInputElement;
+    quitBtn: HTMLElement;
+}
 
-export function renderRoom() {
-    const app = document.getElementById("app")!;
+interface RoomViewState {}
 
-    app.innerHTML = `
+export class RoomView extends View<RoomViewElements, RoomViewState> {
+    async render() {
+        const app = document.getElementById("app")!;
+
+        app.innerHTML = `
             <div id="roomContainer" class="room-container">
+                <button id="quitBtn" class="btn-square"></button>
+                <div class="player-list"></div>
                 <div id="chatBox" class="chat-box">
                 </div> 
                 <input type="text" id="msgBox" class="input-box" placeholder="Text...">
@@ -29,53 +38,65 @@ export function renderRoom() {
             </div>
     `;
 
-    const elements: RoomViewElements = {
-        chatBox: document.getElementById("chatBox")!,
-        msgBox: document.getElementById("msgBox")! as HTMLInputElement,
-        readyBtn: document.getElementById("readyBtn")! as HTMLInputElement,
+        this.elements = {
+            chatBox: document.getElementById("chatBox")!,
+            msgBox: document.getElementById("msgBox")! as HTMLInputElement,
+            readyBtn: document.getElementById("readyBtn")! as HTMLInputElement,
+            quitBtn: document.getElementById("quitBtn")!
+        };
     }
 
-    attachDomListeners(elements);
-    attachSocketListeners(elements);
-}
+    attachDomListeners() {
+        this.elements.readyBtn.addEventListener("click", () => {
+            const isReady = this.elements.readyBtn.checked;
+            roomReady(isReady);
+        });
 
-function displayReadyCount(count: number) {
-    const readyBtn = document.getElementById("readyBtn");
-    if (!readyBtn) return;
-    readyBtn.innerText = `Ready ${count}/4`;
-}
+        this.elements.msgBox.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                roomMessage(this.elements.msgBox.value.trim());
+                this.elements.msgBox.value = "";
+            }
+        });
 
-function attachDomListeners(elements: RoomViewElements) {
-    elements.readyBtn.addEventListener("click", () => {
-        const isReady = elements.readyBtn.checked;
-        roomReady(isReady);
-    });
+        this.elements.quitBtn.addEventListener("click", async () => {
+            roomLeave();
+            await navigate("home");
+        });
+    }
 
-    elements.msgBox.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            roomMessage(elements.msgBox.value.trim());
-            elements.msgBox.value = "";
-        }
-    });
-}
+    attachSocketListeners() {
+        roomMessaged((username, msg) => {
+            console.log(username, msg);
+            const elem = document.createElement("div");
+            elem.className = "chat-message";
+            elem.innerText = `${username}: ${msg}`;
+            this.elements.chatBox.appendChild(elem);
+            this.elements.chatBox.lastElementChild?.scrollIntoView(true);
+        });
 
-function attachSocketListeners(elements: RoomViewElements) {
-    roomMessaged((username, msg) => {
-        console.log(username, msg);
-        const elem = document.createElement('div');
-        elem.className = "chat-message";
-        elem.innerText = `${username}: ${msg}`;
-        elements.chatBox.appendChild(elem);
-        elements.chatBox.lastElementChild?.scrollIntoView(true);
-    });
+        // TODO: change
+        roomReadied(async (readyPlayers: PlayerId[]) => {
+            const count = readyPlayers.length;
+            this.displayReadyCount(count);
+            if (count === 4) {
+                await navigate("game");
+            }
+        });
+    }
 
-    // TODO: change
-    roomReadied(async (readyPlayers: PlayerId[]) => {
-        const count = readyPlayers.length;
-        displayReadyCount(count);
-        if (count === 4) {
-            await navigate("game");
-        }
-    });
+    private displayReadyCount(count: number) {
+        const readyBtn = document.getElementById("readyBtn");
+        if (!readyBtn) return;
+        readyBtn.innerText = `Ready ${count}/4`;
+    }
 
+    detachDomListeners(): void {
+        
+    }
+
+    detachSocketListeners(): void {
+        socket.off("room:messaged"); 
+        socket.off("room:readied");
+    }
 }

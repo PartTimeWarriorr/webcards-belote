@@ -1,17 +1,30 @@
-import { renderHome } from "./views/home";
-import { renderRoom } from "./views/room";
-import { renderGame } from "./views/game";
-let currentPage = "home";
+import { HomeView } from "./views/home";
+import { RoomView } from "./views/room";
+import { GameView } from "./views/game";
 
-export async function navigate(pageName: string) {
-    currentPage = pageName;
-    render();
+
+type ViewKey = "home" | "room" | "game";
+
+type ViewMap = {
+    home: HomeView;
+    room: RoomView;
+    game: GameView;
+};
+
+const views: ViewMap = {
+    home: new HomeView(),
+    room: new RoomView(),
+    game: new GameView(),
+};
+
+export async function navigate(pageName: ViewKey) {
+    currentView?.unmount();
+
+    currentView = views[pageName];
+    await currentView.mount();
 }
 
-async function render() {
-    if (currentPage === "home") renderHome();
-    if (currentPage === "room") renderRoom();
-    if (currentPage === "game") await renderGame();
-}
+let currentView: ViewMap[ViewKey] | undefined = views.home;
 
-render();
+// await currentView?.mount();
+await navigate("home");

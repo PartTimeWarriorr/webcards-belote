@@ -2,7 +2,7 @@ import { PlayerId, Bid, Card, PlayerView, RoomJoinedPayload, Move, GameConfig, G
 
 export interface ClientToServerEvents {
     "room:join": (roomId: string) => void;
-    "room:leave": (roomId: string) => void;
+    "room:leave": () => void;
     "game:move": (move: Move) => void;
     "game:save": () => void;
     "game:sync": () => void;
