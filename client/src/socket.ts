@@ -53,6 +53,10 @@ export function roomMessage(msg: string) {
     socket.emit("room:message", msg);
 }
 
+export function gameSync() {
+    socket.emit("game:sync");
+}
+
 // Server to Client
 export function welcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);

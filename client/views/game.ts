@@ -20,6 +20,7 @@ import {
 import {
     clientError,
     gameMove,
+    gameSync,
     roomJoin,
     roomReadied,
     roomReady,
@@ -28,7 +29,7 @@ import {
     welcome,
 } from "@/socket";
 import { getCardId } from "@/utils";
-import { userId } from "./room";
+import { userId } from "./home";
 
 interface GameViewElements {
     scoreboard: HTMLElement;
@@ -49,7 +50,7 @@ interface GameViewState {
 }
 
 export async function renderGame() {
-
+    console.log("Rendering game...");
     const app = document.getElementById("app")!;
     app.innerHTML = `
         <div id="biddingMenu" class="gamemode-modal">
@@ -98,17 +99,23 @@ export async function renderGame() {
         playerGameView: null,
         localConfig: null,
         clientId: userId,
-    }
+    };
 
     attachDomListeners(elements, viewState);
     attachSocketListeners(elements, viewState);
+    console.log("Gameview built");
+    gameSync();
 }
 
-function attachDomListeners(elements: GameViewElements, viewState: GameViewState) {
+function attachDomListeners(
+    elements: GameViewElements,
+    viewState: GameViewState,
+) {
     elements.modeButtons.forEach((btn) => {
         btn.addEventListener("click", () => {
             const name = btn.getAttribute("name");
-            if (!name || !viewState.clientId || !viewState.playerGameView) return;
+            if (!name || !viewState.clientId || !viewState.playerGameView)
+                return;
             gameMove({
                 type: "BID",
                 player: viewState.clientId,
@@ -125,17 +132,28 @@ function attachDomListeners(elements: GameViewElements, viewState: GameViewState
     });
 }
 
-function attachSocketListeners(elements: GameViewElements, viewState: GameViewState) {
+function attachSocketListeners(
+    elements: GameViewElements,
+    viewState: GameViewState,
+) {
     startGame((payload: { gameInit: GameInitPayload; view: PlayerView }) => {
+        console.log("Init received");
         viewState.localConfig = payload.gameInit;
         viewState.playerGameView = payload.view;
+        console.log(viewState.localConfig);
         if (!viewState.clientId) {
             console.error("Missing player id");
             return;
         }
-        const rotated = rotateSeats(payload.gameInit.orderedPlayers, viewState.clientId);
+        const rotated = rotateSeats(
+            payload.gameInit.orderedPlayers,
+            viewState.clientId,
+        );
         viewState.localConfig.orderedPlayers = rotated;
-        elements.board.render(viewState.localConfig.orderedPlayers, viewState.playerGameView);
+        elements.board.render(
+            viewState.localConfig.orderedPlayers,
+            viewState.playerGameView,
+        );
 
         if (viewState.playerGameView.phase === GamePhase.Bidding) {
             if (!elements.biddingMenu) {
@@ -143,7 +161,9 @@ function attachSocketListeners(elements: GameViewElements, viewState: GameViewSt
                 return;
             }
             elements.biddingMenu.style.display =
-                viewState.playerGameView.currentBidder === viewState.clientId ? "grid" : "none";
+                viewState.playerGameView.currentBidder === viewState.clientId
+                    ? "grid"
+                    : "none";
         } else {
             if (!elements.biddingMenu) {
                 console.error("Missing menu");
@@ -161,16 +181,21 @@ function attachSocketListeners(elements: GameViewElements, viewState: GameViewSt
     });
 
     updateGame((payload: PlayerView) => {
+        console.log(payload);
         viewState.playerGameView = payload;
         if (!viewState.clientId) {
             console.error("Missing player id");
             return;
         }
+        console.log(viewState.localConfig);
         if (!viewState.localConfig) {
             console.error("Missing config");
             return;
         }
-        elements.board.render(viewState.localConfig.orderedPlayers, viewState.playerGameView);
+        elements.board.render(
+            viewState.localConfig.orderedPlayers,
+            viewState.playerGameView,
+        );
 
         if (elements.biddingMenu) {
             elements.biddingMenu.style.display =
@@ -184,14 +209,18 @@ function attachSocketListeners(elements: GameViewElements, viewState: GameViewSt
 
         if (elements.scoreboard) {
             elements.scoreboard.style.display =
-                viewState.playerGameView.phase === GamePhase.Scoring ? "block" : "none";
+                viewState.playerGameView.phase === GamePhase.Scoring
+                    ? "block"
+                    : "none";
         } else {
             console.error("Missing scoreboard");
         }
 
         if (elements.winScreen) {
             elements.winScreen.style.display =
-                viewState.playerGameView.phase === GamePhase.Finished ? "block" : "none";
+                viewState.playerGameView.phase === GamePhase.Finished
+                    ? "block"
+                    : "none";
         } else {
             console.error("Missing win screen");
         }
@@ -224,7 +253,12 @@ function attachSocketListeners(elements: GameViewElements, viewState: GameViewSt
     });
 
     roomReadied((readyPlayers: PlayerId[]) => {
-        if (!viewState.clientId || !viewState.localConfig || !viewState.playerGameView) return;
+        if (
+            !viewState.clientId ||
+            !viewState.localConfig ||
+            !viewState.playerGameView
+        )
+            return;
         if (elements.debugBoard) {
             elements.debugBoard.textContent = parseDebugInfo(
                 viewState.clientId,
@@ -234,6 +268,9 @@ function attachSocketListeners(elements: GameViewElements, viewState: GameViewSt
             );
         } else {
             console.error("Missing debug board");
+        }
+        if (readyPlayers.length === 4) {
+            gameSync();
         }
     });
 
@@ -297,12 +334,19 @@ function parseAnnounceTab(
 
     return `
         Team 1: \n
-        ${team1[0]}: ${gameView.round.announcements[team1[0]!].map((a) => parseAnnouncement(a, "team1" === ownTeam)).join(", ")} \n
-        ${team1[1]}: ${gameView.round.announcements[team1[1]!].map((a) => parseAnnouncement(a, "team1" === ownTeam)).join(", ")} \n
-
+        ${team1.map((p) => {
+            if (!p) return;
+            p in gameView.round.announcements
+                ? `${p}: ${gameView.round.announcements[p].map((a) => parseAnnouncement(a, "team1" === ownTeam)).join(", ")}`
+                : "";
+        })} \n
         Team 2: \n
-        ${team2[0]}: ${gameView.round.announcements[team2[0]!].map((a) => parseAnnouncement(a, "team2" === ownTeam)).join(", ")} \n
-        ${team2[1]}: ${gameView.round.announcements[team2[1]!].map((a) => parseAnnouncement(a, "team2" === ownTeam)).join(", ")} \n
+        ${team2.map((p) => {
+            if (!p) return;
+            p in gameView.round.announcements
+                ? `${p}: ${gameView.round.announcements[p].map((a) => parseAnnouncement(a, "team2" === ownTeam)).join(", ")}`
+                : "";
+        })}
     `;
 }
 

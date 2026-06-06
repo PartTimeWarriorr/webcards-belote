@@ -1,7 +1,9 @@
-import { roomJoined, roomJoin, startGame, connectSocket } from "../src/socket";
+import { roomJoined, roomJoin, startGame, connectSocket, welcome } from "../src/socket";
 import { navigate } from "../main";
-import { GameConfig, RoomJoinedPayload } from "@shared/types";
+import { GameConfig, PlayerId, RoomJoinedPayload } from "@shared/types";
 import { createRoom, getLocalUser, getRooms, getUser, login, register, Room, setUser, User } from "@/api";
+
+export let userId: PlayerId | undefined = undefined;
 
 export async function renderHome() {
     const user = getLocalUser();
@@ -127,6 +129,11 @@ async function renderLoggedIn(user: User) {
 
     roomJoined(async (payload: RoomJoinedPayload) => {
         await navigate("room");
+    });
+
+    welcome((id) => {
+        userId = id;
+        console.log(userId);
     });
 }
 

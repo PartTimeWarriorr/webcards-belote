@@ -1,4 +1,5 @@
 import {
+    gameSync,
     roomJoin,
     roomMessage,
     roomMessaged,
@@ -14,7 +15,6 @@ interface RoomViewElements {
     msgBox: HTMLInputElement;
     readyBtn: HTMLInputElement
 };
-export let userId: PlayerId | undefined = undefined;
 
 export function renderRoom() {
     const app = document.getElementById("app")!;
@@ -78,8 +78,4 @@ function attachSocketListeners(elements: RoomViewElements) {
         }
     });
 
-    welcome((id) => {
-        userId = id;
-        console.log(userId);
-    });
 }

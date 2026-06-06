@@ -59,7 +59,6 @@ export class Board {
                 await this.clearHands();
                 await this.clearPlayed();
                 await this.renderHands(seats, gameView);
-                console.log(gameView);
                 break;
             }
             case GamePhase.Playing: {
@@ -72,8 +71,6 @@ export class Board {
             case GamePhase.Scoring: {
                 await this.clearHands();
                 await this.clearPlayed();
-                // render some scoreboard
-                console.log(gameView);
                 break;
             }
         }
