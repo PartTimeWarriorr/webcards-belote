@@ -6,6 +6,8 @@ export interface ClientToServerEvents {
     "game:move": (move: Move) => void;
     "game:save": () => void;
     "game:sync": () => void;
+    "game:init": () => void;
+    "game:advance": () => void;
     "room:ready": (isReady: boolean) => void;
     "room:message": (message: string) => void;
 }

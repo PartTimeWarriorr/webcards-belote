@@ -19,6 +19,8 @@ import {
 } from "@shared/types";
 import {
     clientError,
+    gameAdvance,
+    gameInit,
     gameMove,
     gameSync,
     roomJoin,
@@ -277,7 +279,8 @@ export class GameView extends View<GameViewElements, GameViewState> {
                 console.error("Missing debug board");
             }
             if (readyPlayers.length === 4) {
-                gameSync();
+                // gameSync();
+                gameAdvance();
             }
         });
 
@@ -289,7 +292,8 @@ export class GameView extends View<GameViewElements, GameViewState> {
             this.elements.errorTab.textContent = err;
         });
 
-        gameSync();
+        // gameSync();
+        gameInit();
     }
 
     detachDomListeners(): void {}

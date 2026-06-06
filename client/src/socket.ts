@@ -57,6 +57,14 @@ export function gameSync() {
     socket.emit("game:sync");
 }
 
+export function gameInit() {
+    socket.emit("game:init");
+}
+
+export function gameAdvance() {
+    socket.emit("game:advance");
+}
+
 // Server to Client
 export function welcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);

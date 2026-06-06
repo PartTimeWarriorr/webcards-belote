@@ -165,7 +165,7 @@ export function setupSocket(server: any) {
                 "room:readied",
                 Array.from(room.readyPlayers),
             );
-            console.log("Everyone is ready")
+            console.log("Everyone is ready");
 
             if (room.allReady()) {
                 room.resetReady();
@@ -181,17 +181,23 @@ export function setupSocket(server: any) {
             }
 
             if (!room.game) {
-                console.log("Creating game");
-                room.joinRandomTeams();
-                room.initGame();
-                const state = room.getGameState();
-                const gameInit = room.getGameInitPayload();
-                socket.emit("game:init", {
-                    gameInit,
-                    view: buildPlayerView(state, socket.userId),
-                });
+                console.log("Whoops");
                 return;
             }
+
+            // if (!room.game) {
+            //     console.log("Creating game");
+            //     room.joinRandomTeams();
+            //     room.initGame();
+            //     const state = room.getGameState();
+            //     const gameInit = room.getGameInitPayload();
+            //     // socket.emit("game:init", {
+            //     //     gameInit,
+            //     //     view: buildPlayerView(state, socket.userId),
+            //     // });
+            //     broadCastGameInit(io, state, gameInit, room);
+            //     return;
+            // }
 
             if (room.isGameFinished()) {
                 room.initGame();
@@ -209,12 +215,69 @@ export function setupSocket(server: any) {
                     type: "START_NEW_ROUND",
                 });
                 if (result.ok) {
-                    socket.emit("game:state", buildPlayerView(result.state, socket.userId));
+                    socket.emit(
+                        "game:state",
+                        buildPlayerView(result.state, socket.userId),
+                    );
                 } else {
                     socket.emit("client:error", result.reason);
                 }
                 return;
             }
+        });
+
+        socket.on("game:advance", () => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+            if (!room) {
+                socket.emit("client:error", "Not in any room");
+                return;
+            }
+
+            if (!room.game) {
+                console.log("Whoops");
+                return;
+            }
+
+            if (room.isGameFinished()) {
+                room.initGame();
+                const state = room.getGameState();
+                const gameInit = room.getGameInitPayload();
+                broadCastGameInit(io, state, gameInit, room);
+                return;
+            }
+
+            if (room.isGameScoring()) {
+                const result = room.game.applyMove({
+                    type: "START_NEW_ROUND",
+                });
+                if (result.ok) {
+                    // socket.emit("game:state", buildPlayerView(result.state, socket.userId));
+                    broadCastGameState(io, result.state, room);
+                } else {
+                    socket.emit("client:error", result.reason);
+                }
+                return;
+            }
+        });
+
+        socket.on("game:init", () => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+            if (!room) {
+                socket.emit("client:error", "Player not in any room");
+                return;
+            }
+
+            if (!room.game) {
+                room.joinRandomTeams();
+                room.initGame();
+            }
+
+            const state = room.getGameState();
+            const gameInit = room.getGameInitPayload();
+            socket.emit("game:init", {
+                gameInit,
+                view: buildPlayerView(state, socket.userId),
+            });
         });
 
         socket.on("room:message", (msg: string) => {
