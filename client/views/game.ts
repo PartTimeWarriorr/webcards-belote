@@ -57,6 +57,7 @@ export class GameView extends View<GameViewElements, GameViewState> {
     async render() {
         console.log("Rendering game...");
         const app = document.getElementById("app")!;
+
         app.innerHTML = `
         <div id="biddingMenu" class="gamemode-modal">
             <div class="mode-btn btn-club" name="C"></div>
@@ -109,6 +110,26 @@ export class GameView extends View<GameViewElements, GameViewState> {
         console.log("Gameview built");
     }
 
+    appendProfiles() {
+        const app = document.getElementById("app")!;
+        this.viewState.localConfig?.orderedPlayers.forEach((seat, i) => {
+            const profile = this.viewState.localConfig!.playerProfiles[seat];
+            const {team1, team2} = this.viewState.localConfig!.teams;
+            const team = team1.includes(seat) ? "team1" : "team2";
+            const profileTab = document.createElement("div");
+            profileTab.classList.add("profile", `profile-${i}`);
+            profileTab.innerHTML = `
+                <p class="profile-name">${profile?.username}</p>
+                <p class="profile-team">${team}</p>
+                <div class="profile-icon-holder">
+                    <div class="profile-icon profile-icon-left" style="display:${profile?.isBot ? "block" : "none"}"></div>
+                    <div class="profile-icon profile-icon-right"style="display:${profile?.connected ? "none" : "block"}"></div>
+                </div>
+            `;
+            app.appendChild(profileTab);
+        });
+    }
+
     attachDomListeners(): void {
         this.elements.modeButtons.forEach((btn) => {
             btn.addEventListener("click", () => {
@@ -141,7 +162,6 @@ export class GameView extends View<GameViewElements, GameViewState> {
     attachSocketListeners(): void {
         startGame(
             (payload: { gameInit: GameInitPayload; view: PlayerView }) => {
-                console.log("Init received");
                 this.viewState.localConfig = payload.gameInit;
                 this.viewState.playerGameView = payload.view;
                 console.log(this.viewState.localConfig);
@@ -176,6 +196,8 @@ export class GameView extends View<GameViewElements, GameViewState> {
                     }
                     this.elements.biddingMenu.style.display = "none";
                 }
+
+                this.appendProfiles();
 
                 if (!this.elements.debugBoard) return;
                 this.elements.debugBoard.textContent = this.parseDebugInfo(

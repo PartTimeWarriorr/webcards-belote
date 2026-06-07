@@ -2,7 +2,6 @@ import { HomeView } from "./views/home";
 import { RoomView } from "./views/room";
 import { GameView } from "./views/game";
 
-
 type ViewKey = "home" | "room" | "game";
 
 type ViewMap = {
@@ -26,5 +25,4 @@ export async function navigate(pageName: ViewKey) {
 
 let currentView: ViewMap[ViewKey] | undefined = views.home;
 
-// await currentView?.mount();
 await navigate("home");
