@@ -1,18 +1,10 @@
 import Konva from "konva";
-import {
-    Card,
-    GamePhase,
-    Move,
-    Play,
-    PlayerId,
-    PlayerView,
-    Seats,
-} from "@shared/types.js";
+import { Card, GamePhase, Move, Play, PlayerId, PlayerView, Seats } from "@shared/types.js";
 import { Vector2d } from "konva/lib/types";
 import { CardObject } from "./types.js";
 
 import { CardBuilder } from "./card-builder.js";
-import { gameMove } from "./socket.js";
+import { emitGameMove } from "../../../../src/socket.js";
 
 const IMAGE_SCALE: number = 2;
 const PLAYFIELD_SCALE = 4;
@@ -95,11 +87,7 @@ export class Board {
         this.stage.add(this.dragLayer);
     }
 
-    static async init(
-        layer: Konva.Layer,
-        dragLayer: Konva.Layer,
-        stage: Konva.Stage,
-    ) {
+    static async init(layer: Konva.Layer, dragLayer: Konva.Layer, stage: Konva.Stage) {
         const builder = new CardBuilder(IMAGE_SCALE);
         await builder.ready;
 
@@ -132,11 +120,7 @@ export class Board {
 
             // If at player seat (always first)
             if (seatIndex === 0) {
-                await this.renderPlayerHand(
-                    playerId,
-                    gameView.round.hand ?? [],
-                    seatInfo.position,
-                );
+                await this.renderPlayerHand(playerId, gameView.round.hand ?? [], seatInfo.position);
             } else {
                 const cardCount = gameView.round.numCards[playerId] ?? 8;
                 await this.renderOtherHand(
@@ -149,41 +133,33 @@ export class Board {
         }
     }
 
-    private async renderPlayerHand(
-        playerId: PlayerId,
-        hand: Array<Card>,
-        initPos: Vector2d,
-    ) {
+    private async renderPlayerHand(playerId: PlayerId, hand: Array<Card>, initPos: Vector2d) {
         for (const [index, card] of hand.entries()) {
-            const cardObject: CardObject = await this.builder.buildFrontCard(
-                card,
-                initPos,
-                {
-                    draggable: true,
-                    dragOptions: {
-                        stage: this.stage,
-                        dragLayer: this.dragLayer,
-                        isValidDrop: (pos) => {
-                            const bounds = this.playFieldBounds;
-                            return (
-                                pos.x >= bounds.x &&
-                                pos.x <= bounds.x + bounds.width &&
-                                pos.y >= bounds.y &&
-                                pos.y <= bounds.y + bounds.height
-                            );
-                        },
-                        onValidDrop: (card, obj) => {
-                            const move: Move = {
-                                type: "PLAY",
-                                player: playerId,
-                                card: card,
-                            };
-                            gameMove(move);
-                            obj.setPosition(obj.dragStart);
-                        },
+            const cardObject: CardObject = await this.builder.buildFrontCard(card, initPos, {
+                draggable: true,
+                dragOptions: {
+                    stage: this.stage,
+                    dragLayer: this.dragLayer,
+                    isValidDrop: (pos) => {
+                        const bounds = this.playFieldBounds;
+                        return (
+                            pos.x >= bounds.x &&
+                            pos.x <= bounds.x + bounds.width &&
+                            pos.y >= bounds.y &&
+                            pos.y <= bounds.y + bounds.height
+                        );
+                    },
+                    onValidDrop: (card, obj) => {
+                        const move: Move = {
+                            type: "PLAY",
+                            player: playerId,
+                            card: card,
+                        };
+                        emitGameMove(move);
+                        obj.setPosition(obj.dragStart);
                     },
                 },
-            );
+            });
 
             const v: Vector2d = {
                 x: initPos.x + SPACE * index,
@@ -206,10 +182,7 @@ export class Board {
             const offsetY = rotation === 90 ? SPACE_VERTICAL * i : 0;
 
             const position = { x: initPos.x + offsetX, y: initPos.y + offsetY };
-            const cardObject = await this.builder.buildBackCard(
-                position,
-                rotation,
-            );
+            const cardObject = await this.builder.buildBackCard(position, rotation);
 
             if (!this.otherHandGroups.has(playerId)) {
                 this.otherHandGroups.set(playerId, new Konva.Group());
@@ -222,9 +195,7 @@ export class Board {
     async renderTrick(seats: Seats, gameView: PlayerView) {
         if (gameView.phase !== GamePhase.Playing) return;
         for (let i = 0; i < seats.length; ++i) {
-            const playedCard = gameView.plays.find(
-                (play) => play.player === seats[i],
-            );
+            const playedCard = gameView.plays.find((play) => play.player === seats[i]);
             if (playedCard) {
                 const c = await this.builder.buildFrontCard(
                     playedCard.card,

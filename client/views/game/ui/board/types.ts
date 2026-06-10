@@ -1,4 +1,4 @@
-import { Card, GameConfig } from "@shared/types";
+import { Card } from "@shared/types";
 import type Konva from "konva";
 import { Vector2d } from "konva/lib/types";
 

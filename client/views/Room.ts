@@ -1,13 +1,10 @@
 import {
-    gameSync,
-    roomJoin,
-    roomLeave,
-    roomMessage,
-    roomMessaged,
-    roomReadied,
-    roomReady,
+    emitRoomLeave,
+    emitRoomMessage,
+    emitRoomReady,
+    onRoomMessaged,
+    onRoomReadied,
     socket,
-    welcome,
 } from "@/socket";
 import { PlayerId } from "@shared/types";
 import { navigate } from "../main";
@@ -23,7 +20,7 @@ interface RoomViewElements {
 interface RoomViewState {}
 
 export class RoomView extends View<RoomViewElements, RoomViewState> {
-    async render() {
+    async setupPage() {
         const app = document.getElementById("app")!;
 
         app.innerHTML = `
@@ -49,24 +46,24 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
     attachDomListeners() {
         this.elements.readyBtn.addEventListener("click", () => {
             const isReady = this.elements.readyBtn.checked;
-            roomReady(isReady);
+            emitRoomReady(isReady);
         });
 
         this.elements.msgBox.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                roomMessage(this.elements.msgBox.value.trim());
+                emitRoomMessage(this.elements.msgBox.value.trim());
                 this.elements.msgBox.value = "";
             }
         });
 
         this.elements.quitBtn.addEventListener("click", async () => {
-            roomLeave();
+            emitRoomLeave();
             await navigate("home");
         });
     }
 
     attachSocketListeners() {
-        roomMessaged((username, msg) => {
+        onRoomMessaged((username, msg) => {
             console.log(username, msg);
             const elem = document.createElement("div");
             elem.className = "chat-message";
@@ -76,7 +73,7 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
         });
 
         // TODO: change
-        roomReadied(async (readyPlayers: PlayerId[]) => {
+        onRoomReadied(async (readyPlayers: PlayerId[]) => {
             const count = readyPlayers.length;
             this.displayReadyCount(count);
             if (count === 4) {

@@ -14,7 +14,7 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
     "welcome": (pid: PlayerId) => void;
-    "client:error": (msg: string) => void;
+    "game:error": (msg: string) => void;
     "room:log": (msg: string) => void;
     "room:joined": (payload: RoomJoinedPayload) => void;
     "room:left": (payload: RoomJoinedPayload) => void;

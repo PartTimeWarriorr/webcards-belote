@@ -85,7 +85,7 @@ export function setupSocket(server: any) {
                 });
             } else {
                 socket.emit(
-                    "client:error",
+                    "game:error",
                     "Couldn't join room: Room is full.",
                 );
             }
@@ -95,11 +95,11 @@ export function setupSocket(server: any) {
             logger.logMove(move, socket.userId);
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "You're not in any room/game");
+                socket.emit("game:error", "You're not in any room/game");
                 return;
             }
             if (!room.game) {
-                socket.emit("client:error", "No game started in this room");
+                socket.emit("game:error", "No game started in this room");
                 return;
             }
 
@@ -121,19 +121,19 @@ export function setupSocket(server: any) {
                     }
                 }
             } else {
-                socket.emit("client:error", result.reason);
+                socket.emit("game:error", result.reason);
             }
         });
 
         socket.on("game:save", async () => {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "You're not in any room/game");
+                socket.emit("game:error", "You're not in any room/game");
                 return;
             }
 
             if (!room.game) {
-                socket.emit("client:error", "No game started in this room");
+                socket.emit("game:error", "No game started in this room");
                 return;
             }
 
@@ -147,7 +147,7 @@ export function setupSocket(server: any) {
         socket.on("room:ready", (isReady) => {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "Not in any room");
+                socket.emit("game:error", "Not in any room");
                 return;
             }
             try {
@@ -156,7 +156,7 @@ export function setupSocket(server: any) {
                     : room.unready(socket.userId);
             } catch (err) {
                 socket.emit(
-                    "client:error",
+                    "game:error",
                     err instanceof Error ? err.message : "Unknown error",
                 );
             }
@@ -176,7 +176,7 @@ export function setupSocket(server: any) {
             console.log("Syncing game");
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "Not in any room");
+                socket.emit("game:error", "Not in any room");
                 return;
             }
 
@@ -220,7 +220,7 @@ export function setupSocket(server: any) {
                         buildPlayerView(result.state, socket.userId),
                     );
                 } else {
-                    socket.emit("client:error", result.reason);
+                    socket.emit("game:error", result.reason);
                 }
                 return;
             }
@@ -229,7 +229,7 @@ export function setupSocket(server: any) {
         socket.on("game:advance", () => {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "Not in any room");
+                socket.emit("game:error", "Not in any room");
                 return;
             }
 
@@ -254,7 +254,7 @@ export function setupSocket(server: any) {
                     // socket.emit("game:state", buildPlayerView(result.state, socket.userId));
                     broadCastGameState(io, result.state, room);
                 } else {
-                    socket.emit("client:error", result.reason);
+                    socket.emit("game:error", result.reason);
                 }
                 return;
             }
@@ -263,7 +263,7 @@ export function setupSocket(server: any) {
         socket.on("game:init", () => {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "Player not in any room");
+                socket.emit("game:error", "Player not in any room");
                 return;
             }
 
@@ -283,7 +283,7 @@ export function setupSocket(server: any) {
         socket.on("room:message", (msg: string) => {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) {
-                socket.emit("client:error", "Player not in any room");
+                socket.emit("game:error", "Player not in any room");
                 return;
             }
 
@@ -294,14 +294,14 @@ export function setupSocket(server: any) {
             const room = roomManager.findRoomByPlayerId(socket.userId);
 
             if (!room) {
-                socket.emit("client:error", "Player not in any room");
+                socket.emit("game:error", "Player not in any room");
                 return;
             }
 
             try {
                 room.leave(socket.userId);
             } catch (err) {
-                socket.emit("client:error", "Player not in room");
+                socket.emit("game:error", "Player not in room");
             }
 
             io.to(room.name).emit("room:left", {
@@ -314,11 +314,10 @@ export function setupSocket(server: any) {
             const room = roomManager.findRoomByPlayerId(socket.userId);
             if (!room) return;
 
-            try {
-                room.leave(socket.userId);
-            } catch (err) {
-                socket.emit("client:error", "Player not in room");
-            }
+            const player = room.players.get(socket.userId);
+            if (!player) return;
+            player.connected = false;
+
             io.to(room.name).emit("room:left", {
                 player: socket.userId,
                 room: room.name,

@@ -20,10 +20,10 @@ export class CardBuilder {
         const cardPaths = getAllCardPaths();
 
         await Promise.all(
-            cardPaths.map(async path => {
+            cardPaths.map(async (path) => {
                 const image = await this.loadImage(path);
                 this.images.set(path, image);
-            })
+            }),
         );
     }
 
@@ -64,10 +64,7 @@ export class CardBuilder {
         return obj;
     }
 
-    async buildBackCard(
-        position: Vector2d,
-        rotation: number,
-    ): Promise<Konva.Image> {
+    async buildBackCard(position: Vector2d, rotation: number): Promise<Konva.Image> {
         // const image = await this.loadImage(CARD_BACK);
         const image = this.images.get(CARD_BACK);
         if (!image) throw new Error("Card image not found");
@@ -87,11 +84,7 @@ export class CardBuilder {
         return obj;
     }
 
-    private attachDragEvents(
-        card: Card,
-        obj: CardObject,
-        options: DragOptions,
-    ) {
+    private attachDragEvents(card: Card, obj: CardObject, options: DragOptions) {
         obj.on("mouseover", () => {
             document.body.style.cursor = "pointer";
         });

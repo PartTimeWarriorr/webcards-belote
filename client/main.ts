@@ -1,6 +1,6 @@
 import { HomeView } from "./views/home";
 import { RoomView } from "./views/room";
-import { GameView } from "./views/game";
+import { GameView } from "./views/game/game";
 
 type ViewKey = "home" | "room" | "game";
 

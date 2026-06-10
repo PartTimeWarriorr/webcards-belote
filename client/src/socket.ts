@@ -33,67 +33,72 @@ export function disconnectSocket() {
 }
 
 // Client to Server
-export function roomJoin(roomId: string) {
+export function emitRoomJoin(roomId: string) {
     socket.emit("room:join", roomId);
 }
 
-export function roomLeave() {
+export function emitRoomLeave() {
     socket.emit("room:leave");
 }
 
-export function gameMove(move: Move) {
+export function emitGameMove(move: Move) {
     socket.emit("game:move", move);
 }
 
-export function roomReady(isReady: boolean) {
+export function emitRoomReady(isReady: boolean) {
     socket.emit("room:ready", isReady);
 }
 
-export function roomMessage(msg: string) {
+export function emitRoomMessage(msg: string) {
     socket.emit("room:message", msg);
 }
 
-export function gameSync() {
+// requestGameStep()???
+export function requestGameSync() {
     socket.emit("game:sync");
 }
 
-export function gameInit() {
+export function requestGameInit() {
     socket.emit("game:init");
 }
 
-export function gameAdvance() {
+export function requestGameAdvance() {
     socket.emit("game:advance");
 }
 
 // Server to Client
-export function welcome(callback: (playerId: string) => void) {
+export function onWelcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);
 }
 
-export function roomJoined(callback: (payload: RoomJoinedPayload) => void) {
+export function onRoomJoined(callback: (payload: RoomJoinedPayload) => void) {
     socket.on("room:joined", callback);
 }
 
-export function updateGame(callback: (payload: PlayerView) => void) {
+export function onGameState(callback: (payload: PlayerView) => void) {
     socket.on("game:state", callback);
 }
 
-export function startGame(
+export function onGameInit(
     callback: (payload: { gameInit: GameInitPayload; view: PlayerView }) => void,
 ) {
     socket.on("game:init", callback);
 }
 
-export function clientError(callback: (err: string) => void) {
-    socket.on("client:error", callback);
+export function onGameError(callback: (err: string) => void) {
+    socket.on("game:error", callback);
 }
 
-export function roomReadied(callback: (readyPlayers: PlayerId[]) => void) {
+export function onRoomReadied(callback: (readyPlayers: PlayerId[]) => void) {
     socket.on("room:readied", callback);
 }
 
-export function roomMessaged(
+export function onRoomMessaged(
     callback: (username: string, msg: string) => void,
 ) {
     socket.on("room:messaged", callback);
+}
+
+export function onRoomLeft(callback: (payload: RoomJoinedPayload) => void) {
+    socket.on("room:left", callback);
 }

@@ -1,9 +1,8 @@
 import {
-    roomJoined,
-    roomJoin,
-    startGame,
     connectSocket,
-    welcome,
+    emitRoomJoin,
+    onRoomJoined,
+    onWelcome,
     socket,
 } from "../src/socket";
 import { navigate } from "../main";
@@ -41,16 +40,16 @@ interface HomeViewElements {
 interface HomeViewState {}
 
 export class HomeView extends View<HomeViewElements, HomeViewState> {
-    async render() {
+    async setupPage() {
         const user = getLocalUser();
         if (!user) {
-            await this.renderGuest();
+            await this.setupPageGuest();
         } else {
-            await this.renderLoggedIn(user);
+            await this.setupPageUser(user);
         }
     }
 
-    async renderGuest() {
+    async setupPageGuest() {
         const app = document.getElementById("app")!;
         app.innerHTML = `
         <div id="joinLobbyModal" class="modal stepper">
@@ -84,7 +83,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         };
     }
 
-    async renderLoggedIn(user: User) {
+    async setupPageUser(user: User) {
         const app = document.getElementById("app")!;
 
         let rooms: Room[] = [];
@@ -232,7 +231,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
                             `Room ${response.data.name} created successfully`,
                         );
                         connectSocket();
-                        roomJoin(name);
+                        emitRoomJoin(name);
                     } catch (err) {
                         console.error(err);
                     }
@@ -268,7 +267,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
                     return;
                 }
                 connectSocket();
-                roomJoin(name);
+                emitRoomJoin(name);
             });
         }
     }
@@ -276,11 +275,11 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
     attachSocketListeners(): void {
         const user = getLocalUser();
         if (user) {
-            roomJoined(async (payload: RoomJoinedPayload) => {
+            onRoomJoined(async (payload: RoomJoinedPayload) => {
                 await navigate("room");
             });
 
-            welcome((id) => {
+            onWelcome((id) => {
                 userId = id;
                 console.log(userId);
             });
