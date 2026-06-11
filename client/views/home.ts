@@ -1,10 +1,4 @@
-import {
-    connectSocket,
-    emitRoomJoin,
-    onRoomJoined,
-    onWelcome,
-    socket,
-} from "../src/socket";
+import { connectSocket, emitRoomJoin, onRoomJoined, onWelcome, socket } from "../src/socket";
 import { navigate } from "../main";
 import { GameConfig, PlayerId, RoomJoinedPayload } from "@shared/types";
 import {
@@ -36,15 +30,15 @@ interface HomeViewElements {
     backFromCreateBtn?: HTMLElement;
     submitCreateRoomBtn?: HTMLElement;
     roomNameInput?: HTMLInputElement;
-    roomsNextBtn?: HTMLElement,
-    roomsPrevBtn?: HTMLElement,
-    roomsPageLabel?: HTMLElement,
-    roomsSearchBar?: HTMLInputElement,
+    roomsNextBtn?: HTMLElement;
+    roomsPrevBtn?: HTMLElement;
+    roomsPageLabel?: HTMLElement;
+    roomsSearchBar?: HTMLInputElement;
 }
 
 interface HomeViewState {
-    roomsPage: number,
-    roomsSearchFilter: string,
+    roomsPage: number;
+    roomsSearchFilter: string;
 }
 
 export class HomeView extends View<HomeViewElements, HomeViewState> {
@@ -84,9 +78,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
     `;
 
         this.elements = {
-            registerForm: document.getElementById(
-                "registerForm",
-            ) as HTMLFormElement,
+            registerForm: document.getElementById("registerForm") as HTMLFormElement,
             loginForm: document.getElementById("loginForm") as HTMLFormElement,
         };
     }
@@ -97,19 +89,9 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         this.viewState = {
             roomsPage: 1,
             roomsSearchFilter: "",
-        }
+        };
 
-        let rooms: Room[] = [];
-        try {
-            const response = await getRooms({ page: this.viewState.roomsPage.toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter });
-            rooms = response.data;
-        } catch (err) {
-            console.error(err);
-        }
-        const roomsHTML =
-            rooms.length > 0
-                ? rooms.map((r) => this.renderRoom(r)).join("")
-                : "<div>No rooms found.</div>";
+        const roomsHTML = await this.fetchRooms();
         app.innerHTML = `
         <div id="joinLobbyModal" class="modal stepper">
             <div id="joinLobbyTrack" class="stepper-track">
@@ -175,12 +157,8 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
             backBtn: document.getElementById("backBtn")!,
             scrollBox: document.getElementById("scrollBox")!,
             backFromCreateBtn: document.getElementById("backFromCreateBtn")!,
-            submitCreateRoomBtn: document.getElementById(
-                "submitCreateRoomBtn",
-            )!,
-            roomNameInput: document.getElementById(
-                "roomNameInput",
-            )! as HTMLInputElement,
+            submitCreateRoomBtn: document.getElementById("submitCreateRoomBtn")!,
+            roomNameInput: document.getElementById("roomNameInput")! as HTMLInputElement,
             roomsNextBtn: document.getElementById("roomsNextBtn")!,
             roomsPrevBtn: document.getElementById("roomsPrevBtn")!,
             roomsPageLabel: document.querySelector(".pagination-page")!,
@@ -188,7 +166,23 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         };
     }
 
-    private renderRoom(room: Room) {
+    private async fetchRooms() {
+        let rooms: Room[] = [];
+        try {
+            const response = await getRooms({
+                page: (this.viewState.roomsPage).toString(),
+                limit: ROOMS_LIMIT.toString(),
+                name: this.viewState.roomsSearchFilter,
+            });
+            rooms = response.data;
+        } catch (err) {
+            console.error(err)
+        }
+        const roomsHTML = rooms.length > 0 ? rooms.map((r) => this.roomToHTML(r)).join("") : "<div>No rooms found.</div>";
+        return roomsHTML;
+    }
+
+    private roomToHTML(room: Room) {
         return `
                             <div class="lobby-box">
                                 <div class="lobby-name">${room.name}</div>
@@ -249,27 +243,22 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
             )
                 throw new Error("Missing DOM elements");
 
-            this.elements.submitCreateRoomBtn.addEventListener(
-                "click",
-                async () => {
-                    const name = this.elements.roomNameInput?.value.trim();
-                    if (!name) {
-                        console.error("Name empty");
-                        return;
-                    }
+            this.elements.submitCreateRoomBtn.addEventListener("click", async () => {
+                const name = this.elements.roomNameInput?.value.trim();
+                if (!name) {
+                    console.error("Name empty");
+                    return;
+                }
 
-                    try {
-                        const response = await createRoom({ name: name });
-                        console.log(
-                            `Room ${response.data.name} created successfully`,
-                        );
-                        connectSocket();
-                        emitRoomJoin(name);
-                    } catch (err) {
-                        console.error(err);
-                    }
-                },
-            );
+                try {
+                    const response = await createRoom({ name: name });
+                    console.log(`Room ${response.data.name} created successfully`);
+                    connectSocket();
+                    emitRoomJoin(name);
+                } catch (err) {
+                    console.error(err);
+                }
+            });
 
             const goToStep = (stepIndex: number) => {
                 this.elements.stepper!.style.transform = `translateX(-${stepIndex * 100}%`;
@@ -305,42 +294,32 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
 
             this.elements.roomsSearchBar?.addEventListener("keydown", async (e) => {
                 if (e.key === "Enter") {
-                    
+
+                    this.viewState.roomsSearchFilter = this.elements.roomsSearchBar!.value;
+                    this.elements.roomsSearchBar!.value = "";
+
+                    const roomsHTML = await this.fetchRooms();
+                    this.elements.scrollBox!.innerHTML = roomsHTML;
+                    this.elements.roomsPageLabel!.textContent = `Page ${this.viewState.roomsPage}`;
                 }
             });
 
             this.elements.roomsNextBtn?.addEventListener("click", async () => {
-                let rooms: Room[] = [];
-                try {
-                    const response = await getRooms({ page: (++this.viewState.roomsPage).toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter});
-                    rooms = response.data;
-                } catch (err) {
-                    console.error(err);
-                }
-                const roomsHTML =
-                    rooms.length > 0
-                        ? rooms.map((r) => this.renderRoom(r)).join("")
-                        : "<div>No rooms found.</div>";
+                ++this.viewState.roomsPage;
+                const roomsHTML = await this.fetchRooms();
+
                 this.elements.scrollBox!.innerHTML = roomsHTML;
                 this.elements.roomsPageLabel!.textContent = `Page ${this.viewState.roomsPage}`;
             });
 
             this.elements.roomsPrevBtn?.addEventListener("click", async () => {
                 if (this.viewState.roomsPage === 1) return;
-                let rooms: Room[] = [];
-                try {
-                    const response = await getRooms({ page: (--this.viewState.roomsPage).toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter});
-                    rooms = response.data;
-                } catch (err) {
-                    console.error(err);
-                }
-                const roomsHTML =
-                    rooms.length > 0
-                        ? rooms.map((r) => this.renderRoom(r)).join("")
-                        : "<div>No rooms found.</div>";
+                --this.viewState.roomsPage;
+                const roomsHTML = await this.fetchRooms();
+
                 this.elements.scrollBox!.innerHTML = roomsHTML;
                 this.elements.roomsPageLabel!.textContent = `Page ${this.viewState.roomsPage}`;
-            })
+            });
         }
     }
 
@@ -364,8 +343,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         }
     }
 
-    detachDomListeners(): void {
-    }
+    detachDomListeners(): void {}
 
     detachSocketListeners(): void {
         socket.off("room:joined");

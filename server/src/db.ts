@@ -10,21 +10,14 @@ const prisma = new PrismaClient({
     adapter,
 });
 
-// export async function getRoomPage(page: number = 1, limit: number = 10): Promise<Room[]> {
-//     const rooms = await prisma.room.findMany({
-//         skip: (page - 1) * limit,
-//         take: limit
-//     });
-//     return rooms;
-// }
-
 export async function getRoomPageByName(page: number = 1, limit: number = 10, name: string): Promise<Room[]> {
     const rooms = await prisma.room.findMany({
         skip: (page - 1) * limit,
         take: limit,
         where: {
             name: {
-                contains: name
+                contains: name,
+                mode: "insensitive",
             }
         }
     });
