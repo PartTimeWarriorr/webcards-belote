@@ -143,6 +143,15 @@ export class Room {
     }
 
     join(pid: PlayerId, username: string, isBot: boolean = false): boolean {
+
+        const player = this.players.get(pid);
+
+        // Player is trying to reconnect
+        if (player && !player.connected) {
+            player.connected = true;
+            return true;
+        }
+
         if (this.isFull()) {
             console.log(`Player ${pid} cannot join full room ${this.name}`);
             return false;

@@ -276,7 +276,13 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         const user = getLocalUser();
         if (user) {
             onRoomJoined(async (payload: RoomJoinedPayload) => {
-                await navigate("room");
+                if (payload.isGameActive) {
+                    console.log("Joining game");
+                    await navigate("game");
+                } else {
+                    console.log("Joining room");
+                    await navigate("room");
+                }
             });
 
             onWelcome((id) => {

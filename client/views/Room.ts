@@ -72,7 +72,6 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
             this.elements.chatBox.lastElementChild?.scrollIntoView(true);
         });
 
-        // TODO: change
         onRoomReadied(async (readyPlayers: PlayerId[]) => {
             const count = readyPlayers.length;
             this.displayReadyCount(count);

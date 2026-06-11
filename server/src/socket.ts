@@ -1,8 +1,5 @@
 import { RoomManager } from "./room-manager";
-import {
-    ClientToServerEvents,
-    ServerToClientEvents,
-} from "../../shared/events";
+import { ClientToServerEvents, ServerToClientEvents } from "../../shared/events";
 import { instrument } from "@socket.io/admin-ui";
 import { ServerLogger } from "./server-log";
 import { Server } from "socket.io";
@@ -58,9 +55,7 @@ export function setupSocket(server: any) {
         }
 
         try {
-            const decoded = <JwtPayload>(
-                jwt.verify(token, process.env.JWT_SECRET)
-            );
+            const decoded = <JwtPayload>jwt.verify(token, process.env.JWT_SECRET);
             socket.userId = decoded.userId;
             socket.username = decoded.username;
             next();
@@ -74,6 +69,7 @@ export function setupSocket(server: any) {
         socket.join(socket.userId);
         console.log(`${socket.userId} connected`);
         socket.on("room:join", (roomId) => {
+
             const room = roomManager.getRoom(roomId);
             const joined = room.join(socket.userId, socket.username);
 
@@ -82,12 +78,10 @@ export function setupSocket(server: any) {
                 io.to(room.name).emit("room:joined", {
                     player: socket.userId,
                     room: room.name,
+                    isGameActive: room.game !== undefined
                 });
             } else {
-                socket.emit(
-                    "game:error",
-                    "Couldn't join room: Room is full.",
-                );
+                socket.emit("game:error", "Couldn't join room: Room is full.");
             }
         });
 
@@ -151,20 +145,12 @@ export function setupSocket(server: any) {
                 return;
             }
             try {
-                isReady
-                    ? room.ready(socket.userId)
-                    : room.unready(socket.userId);
+                isReady ? room.ready(socket.userId) : room.unready(socket.userId);
             } catch (err) {
-                socket.emit(
-                    "game:error",
-                    err instanceof Error ? err.message : "Unknown error",
-                );
+                socket.emit("game:error", err instanceof Error ? err.message : "Unknown error");
             }
 
-            io.to(room.name).emit(
-                "room:readied",
-                Array.from(room.readyPlayers),
-            );
+            io.to(room.name).emit("room:readied", Array.from(room.readyPlayers));
             console.log("Everyone is ready");
 
             if (room.allReady()) {
@@ -215,10 +201,7 @@ export function setupSocket(server: any) {
                     type: "START_NEW_ROUND",
                 });
                 if (result.ok) {
-                    socket.emit(
-                        "game:state",
-                        buildPlayerView(result.state, socket.userId),
-                    );
+                    socket.emit("game:state", buildPlayerView(result.state, socket.userId));
                 } else {
                     socket.emit("game:error", result.reason);
                 }
@@ -307,6 +290,7 @@ export function setupSocket(server: any) {
             io.to(room.name).emit("room:left", {
                 player: socket.userId,
                 room: room.name,
+                isGameActive: true,
             });
         });
 
@@ -317,10 +301,13 @@ export function setupSocket(server: any) {
             const player = room.players.get(socket.userId);
             if (!player) return;
             player.connected = false;
+            console.log("Disconnected");
+            console.log(room.players);
 
             io.to(room.name).emit("room:left", {
                 player: socket.userId,
                 room: room.name,
+                isGameActive: true,
             });
         });
     });
@@ -371,8 +358,5 @@ function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
 }
 
 function shouldResolveTrick(state: GameState): boolean {
-    return (
-        state.phase === GamePhase.Playing &&
-        state.trickStatus === TrickStatus.Resolving
-    );
+    return state.phase === GamePhase.Playing && state.trickStatus === TrickStatus.Resolving;
 }

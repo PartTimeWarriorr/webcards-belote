@@ -183,5 +183,7 @@ export class GameView extends View<GameViewElements, GameViewState> {
         socket.off("game:state");
         socket.off("room:readied");
         socket.off("game:error");
+        socket.off("room:left");
+        socket.off("room:joined");
     }
 }

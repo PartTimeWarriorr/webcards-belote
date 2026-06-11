@@ -163,6 +163,7 @@ export type Move =
 export type RoomJoinedPayload = {
     player: PlayerId;
     room: string;
+    isGameActive: boolean;
 };
 
 // Announcements
