@@ -100,7 +100,7 @@ export class Board {
             y: window.screenY + window.innerHeight / PLAYFIELD_SCALE,
             width: window.innerWidth / 2,
             height: window.innerHeight / 2,
-            fill: "blue",
+            fill: "#48c357",
         }).setAttr("name", "PlayField");
 
         this.layer.add(field);

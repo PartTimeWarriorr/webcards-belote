@@ -50,7 +50,7 @@ export class GameView extends View<GameViewElements, GameViewState> {
                         <div id="scoreBoard" class="scoreboard-modal"></div>
                         <div id="winScreen" class="scoreboard-modal"></div>
                         <div id="announceTab" class="announcements-tab"></div>
-                        <div id="errors" style="color:red">Errors here</div>
+                        <div id="errors" class="error-tab">Errors here</div>
                         <div id="debugBoard" class="debug-board"></div>
                         <div id="container"></div>
         `;
@@ -60,6 +60,7 @@ export class GameView extends View<GameViewElements, GameViewState> {
             width: window.innerWidth,
             height: window.innerHeight,
         });
+        stage.container().style.backgroundColor = "rgba(27, 106, 12, 0.8)";
 
         const layer = new Konva.Layer();
         const dragLayer = new Konva.Layer();

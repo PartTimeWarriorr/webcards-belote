@@ -96,6 +96,10 @@ body {
     flex-direction: column;
 }
 
+.step-header {
+    display: flex;
+}
+
 .step-center {
     align-items: center;
 }
@@ -512,4 +516,40 @@ input:checked + label.btn-main {
     background-position: center;
     background-size: contain;
     filter: drop-shadow(0 0 2px white) drop-shadow(0 0 4px white);
+}
+
+/* pagination */
+.scroll-box {
+    overflow-y: scroll;
+    flex: 1;
+    min-height: 0;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 1rem;
+    margin-top: 1rem;
+
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn {
+    min-width: 8rem;
+    margin: 0;
+    padding: 0.75rem 1.25rem;
+}
+
+.pagination-page {
+    font-weight: bold;
+    min-width: 5rem;
+    text-align: center;
+}
+
+.error-tab {
+    color: red;
+    position: absolute;
 }

@@ -28,6 +28,7 @@ declare global {
 type RoomsQuery = {
     page: string;
     limit: string;
+    name: string;
 };
 
 declare module "jsonwebtoken" {
@@ -139,7 +140,8 @@ router.get(
         try {
             const page = Number(req.query.page) || 1;
             const limit = Number(req.query.limit) || 10;
-            const rooms = await db.getRoomPage(page, limit);
+            const name = req.query.name;
+            const rooms = await db.getRoomPageByName(page, limit, name);
 
             return res.status(200).json({
                 data: rooms,

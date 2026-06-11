@@ -52,12 +52,13 @@ export async function getUser() {
     );
 }
 
-export async function getRooms(data: { page: string; limit: string }) {
+export async function getRooms(data: { page: string; limit: string, name: string }) {
     return request<{ data: Room[] }>(
         "/rooms?" +
             new URLSearchParams({
                 page: data.page,
                 limit: data.limit,
+                name: data.name,
             }).toString(),
         {
             method: "GET",

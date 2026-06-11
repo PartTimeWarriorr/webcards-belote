@@ -110,38 +110,38 @@ export class Game {
             this.state = result.state;
         }
 
-        while (this.isBotTurn()) {
-            const m: Move | undefined = this.botMove();
-            if (m) {
-                switch (m.type) {
-                    case "PASS": {
-                        result = handlers.handlePass(
-                            this.config,
-                            this.state as BiddingState,
-                            m.player,
-                        );
-                        if (result.ok) {
-                            this.history.push(move);
-                            this.state = result.state;
-                        }
-                        break;
-                    }
-                    case "PLAY": {
-                        result = handlers.handlePlay(
-                            this.config,
-                            this.state as PlayingState,
-                            m.player,
-                            m.card,
-                        );
-                        if (result.ok) {
-                            this.history.push(move);
-                            this.state = result.state;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+        // while (this.isBotTurn()) {
+        //     const m: Move | undefined = this.botMove();
+        //     if (m) {
+        //         switch (m.type) {
+        //             case "PASS": {
+        //                 result = handlers.handlePass(
+        //                     this.config,
+        //                     this.state as BiddingState,
+        //                     m.player,
+        //                 );
+        //                 if (result.ok) {
+        //                     this.history.push(move);
+        //                     this.state = result.state;
+        //                 }
+        //                 break;
+        //             }
+        //             case "PLAY": {
+        //                 result = handlers.handlePlay(
+        //                     this.config,
+        //                     this.state as PlayingState,
+        //                     m.player,
+        //                     m.card,
+        //                 );
+        //                 if (result.ok) {
+        //                     this.history.push(move);
+        //                     this.state = result.state;
+        //                 }
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
 
         return result;
     }
@@ -166,7 +166,7 @@ export class Game {
         return name.startsWith("bot");
     }
 
-    botMove(): Move | undefined {
+    getBotMove(): Move | undefined {
         switch (this.state.phase) {
             case GamePhase.Bidding: {
                 return { type: "PASS", player: this.state.currentBidder };

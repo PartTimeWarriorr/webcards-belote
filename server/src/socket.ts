@@ -101,6 +101,7 @@ export function setupSocket(server: any) {
 
             if (result.ok) {
                 broadCastGameState(io, result.state, room);
+                processBots(io, room);
 
                 if (shouldResolveTrick(result.state)) {
                     const result = room.game.applyMove({
@@ -109,6 +110,7 @@ export function setupSocket(server: any) {
                     if (result.ok) {
                         setTimeout(() => {
                             broadCastGameState(io, result.state, room);
+                            processBots(io, room);
                         }, 1000);
                     } else {
                         console.log(result.reason);
@@ -171,20 +173,6 @@ export function setupSocket(server: any) {
                 return;
             }
 
-            // if (!room.game) {
-            //     console.log("Creating game");
-            //     room.joinRandomTeams();
-            //     room.initGame();
-            //     const state = room.getGameState();
-            //     const gameInit = room.getGameInitPayload();
-            //     // socket.emit("game:init", {
-            //     //     gameInit,
-            //     //     view: buildPlayerView(state, socket.userId),
-            //     // });
-            //     broadCastGameInit(io, state, gameInit, room);
-            //     return;
-            // }
-
             if (room.isGameFinished()) {
                 room.initGame();
                 const state = room.getGameState();
@@ -226,6 +214,7 @@ export function setupSocket(server: any) {
                 const state = room.getGameState();
                 const gameInit = room.getGameInitPayload();
                 broadCastGameInit(io, state, gameInit, room);
+                processBots(io, room);
                 return;
             }
 
@@ -234,8 +223,8 @@ export function setupSocket(server: any) {
                     type: "START_NEW_ROUND",
                 });
                 if (result.ok) {
-                    // socket.emit("game:state", buildPlayerView(result.state, socket.userId));
                     broadCastGameState(io, result.state, room);
+                    processBots(io, room);
                 } else {
                     socket.emit("game:error", result.reason);
                 }
@@ -359,4 +348,31 @@ function buildPlayerView(state: GameState, player: PlayerId): PlayerView {
 
 function shouldResolveTrick(state: GameState): boolean {
     return state.phase === GamePhase.Playing && state.trickStatus === TrickStatus.Resolving;
+}
+
+async function processBots(io: Server<ClientToServerEvents, ServerToClientEvents, any>, room: Room) {
+    while(room.game?.isBotTurn()) {
+        await delay(500);
+
+        const move = room.game.getBotMove();
+        if (!move) break;
+        const result = room.game.applyMove(move);
+
+        if (!result.ok) break;
+
+        broadCastGameState(io, result.state, room);
+
+        if (shouldResolveTrick(result.state)) {
+            await delay(1000);
+            const trickResult = room.game.applyMove({type: "RESOLVE_TRICK"});
+
+            if (!trickResult.ok) break;
+
+            broadCastGameState(io, trickResult.state, room);
+        }
+    }
+}
+
+async function delay(ms: number) {
+    return new Promise(res => setTimeout(res, ms)); 
 }

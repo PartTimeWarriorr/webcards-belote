@@ -21,6 +21,7 @@ import {
 import { View } from "./view";
 
 export let userId: PlayerId | undefined = undefined;
+const ROOMS_LIMIT: number = 10;
 
 interface HomeViewElements {
     // Guest
@@ -35,9 +36,16 @@ interface HomeViewElements {
     backFromCreateBtn?: HTMLElement;
     submitCreateRoomBtn?: HTMLElement;
     roomNameInput?: HTMLInputElement;
+    roomsNextBtn?: HTMLElement,
+    roomsPrevBtn?: HTMLElement,
+    roomsPageLabel?: HTMLElement,
+    roomsSearchBar?: HTMLInputElement,
 }
 
-interface HomeViewState {}
+interface HomeViewState {
+    roomsPage: number,
+    roomsSearchFilter: string,
+}
 
 export class HomeView extends View<HomeViewElements, HomeViewState> {
     async setupPage() {
@@ -86,9 +94,14 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
     async setupPageUser(user: User) {
         const app = document.getElementById("app")!;
 
+        this.viewState = {
+            roomsPage: 1,
+            roomsSearchFilter: "",
+        }
+
         let rooms: Room[] = [];
         try {
-            const response = await getRooms({ page: "1", limit: "10" });
+            const response = await getRooms({ page: this.viewState.roomsPage.toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter });
             rooms = response.data;
         } catch (err) {
             console.error(err);
@@ -130,9 +143,25 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
                 </div>
 
                 <div class="step">
-                    <div id="backBtn" class="btn-small">Back</div>
+                    <div class="step-header">
+                        <div id="backBtn" class="btn-small">Back</div>
+                        <input id="roomsSearchBar" class="input input-box" placeholder="Search by name...">
+                    </div>
                     <div id="scrollBox" class="scroll-box">
                         ${roomsHTML}
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="roomsPrevBtn" class="btn-main pagination-btn">
+                            ← Previous
+                        </button>
+
+                        <span class="pagination-page">
+                            Page ${this.viewState.roomsPage}
+                        </span>
+
+                        <button id="roomsNextBtn" class="btn-main pagination-btn">
+                            Next →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -152,6 +181,10 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
             roomNameInput: document.getElementById(
                 "roomNameInput",
             )! as HTMLInputElement,
+            roomsNextBtn: document.getElementById("roomsNextBtn")!,
+            roomsPrevBtn: document.getElementById("roomsPrevBtn")!,
+            roomsPageLabel: document.querySelector(".pagination-page")!,
+            roomsSearchBar: document.getElementById("roomsSearchBar")! as HTMLInputElement,
         };
     }
 
@@ -269,6 +302,45 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
                 connectSocket();
                 emitRoomJoin(name);
             });
+
+            this.elements.roomsSearchBar?.addEventListener("keydown", async (e) => {
+                if (e.key === "Enter") {
+                    
+                }
+            });
+
+            this.elements.roomsNextBtn?.addEventListener("click", async () => {
+                let rooms: Room[] = [];
+                try {
+                    const response = await getRooms({ page: (++this.viewState.roomsPage).toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter});
+                    rooms = response.data;
+                } catch (err) {
+                    console.error(err);
+                }
+                const roomsHTML =
+                    rooms.length > 0
+                        ? rooms.map((r) => this.renderRoom(r)).join("")
+                        : "<div>No rooms found.</div>";
+                this.elements.scrollBox!.innerHTML = roomsHTML;
+                this.elements.roomsPageLabel!.textContent = `Page ${this.viewState.roomsPage}`;
+            });
+
+            this.elements.roomsPrevBtn?.addEventListener("click", async () => {
+                if (this.viewState.roomsPage === 1) return;
+                let rooms: Room[] = [];
+                try {
+                    const response = await getRooms({ page: (--this.viewState.roomsPage).toString(), limit: ROOMS_LIMIT.toString(), name: this.viewState.roomsSearchFilter});
+                    rooms = response.data;
+                } catch (err) {
+                    console.error(err);
+                }
+                const roomsHTML =
+                    rooms.length > 0
+                        ? rooms.map((r) => this.renderRoom(r)).join("")
+                        : "<div>No rooms found.</div>";
+                this.elements.scrollBox!.innerHTML = roomsHTML;
+                this.elements.roomsPageLabel!.textContent = `Page ${this.viewState.roomsPage}`;
+            })
         }
     }
 

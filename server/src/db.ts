@@ -10,24 +10,23 @@ const prisma = new PrismaClient({
     adapter,
 });
 
-// export async function findUserByEmail(
-//     email: string,
-// ): Promise<Omit<User, "password"> | null> {
-//     const user = await prisma.user.findUnique({
-//         where: {
-//             email: email,
-//         },
-//         omit: {
-//             password: true,
-//         },
+// export async function getRoomPage(page: number = 1, limit: number = 10): Promise<Room[]> {
+//     const rooms = await prisma.room.findMany({
+//         skip: (page - 1) * limit,
+//         take: limit
 //     });
-
-//     return user;
+//     return rooms;
 // }
-export async function getRoomPage(page: number = 1, limit: number = 10): Promise<Room[]> {
+
+export async function getRoomPageByName(page: number = 1, limit: number = 10, name: string): Promise<Room[]> {
     const rooms = await prisma.room.findMany({
         skip: (page - 1) * limit,
-        take: limit
+        take: limit,
+        where: {
+            name: {
+                contains: name
+            }
+        }
     });
     return rooms;
 }
