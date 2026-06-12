@@ -66,6 +66,10 @@ export function requestGameAdvance() {
     socket.emit("game:advance");
 }
 
+export function requestRoomInit() {
+    socket.emit("room:init");
+}
+
 // Server to Client
 export function onWelcome(callback: (playerId: string) => void) {
     socket.on("welcome", callback);
@@ -85,6 +89,10 @@ export function onGameInit(
     socket.on("game:init", callback);
 }
 
+export function onRoomInit(callback: (payload: {messages: string[], joinedPlayers: string[]}) => void) {
+    socket.on("room:init", callback);
+};
+
 export function onGameError(callback: (err: string) => void) {
     socket.on("game:error", callback);
 }
@@ -101,4 +109,8 @@ export function onRoomMessaged(
 
 export function onRoomLeft(callback: (payload: RoomJoinedPayload) => void) {
     socket.on("room:left", callback);
+}
+
+export function onRoomLog(callback: (log: string) => void) {
+    socket.on("room:log", callback);
 }

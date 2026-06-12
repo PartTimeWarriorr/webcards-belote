@@ -7,6 +7,7 @@ export interface ClientToServerEvents {
     "game:save": () => void;
     "game:sync": () => void;
     "game:init": () => void;
+    "room:init": () => void;
     "game:advance": () => void;
     "room:ready": (isReady: boolean) => void;
     "room:message": (message: string) => void;
@@ -15,13 +16,14 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
     "welcome": (pid: PlayerId) => void;
     "game:error": (msg: string) => void;
-    "room:log": (msg: string) => void;
     "room:joined": (payload: RoomJoinedPayload) => void;
     "room:left": (payload: RoomJoinedPayload) => void;
     "room:readied": (readyPlayers: PlayerId[]) => void;
     "room:messaged": (username: string, message: string) => void;
+    "room:log": (log: string) => void;
     "room:error": (msg: string) => void;
     "game:init": (payload: {gameInit: GameInitPayload, view: PlayerView}) => void;
+    "room:init": (payload: {messages: string[], joinedPlayers: string[]}) => void;
     "game:state": (payload: PlayerView) => void;
     "game:log": (msg: string) => void;
     "game:revertMove": (card: Card) => void;

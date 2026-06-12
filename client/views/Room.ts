@@ -2,11 +2,15 @@ import {
     emitRoomLeave,
     emitRoomMessage,
     emitRoomReady,
+    onRoomInit,
+    onRoomJoined,
+    onRoomLog,
     onRoomMessaged,
     onRoomReadied,
+    requestRoomInit,
     socket,
 } from "@/socket";
-import { PlayerId } from "@shared/types";
+import { PlayerId, RoomJoinedPayload } from "@shared/types";
 import { navigate } from "../main";
 import { View } from "./view";
 
@@ -15,6 +19,7 @@ interface RoomViewElements {
     msgBox: HTMLInputElement;
     readyBtn: HTMLInputElement;
     quitBtn: HTMLElement;
+    joinedPlayers: HTMLElement;
 }
 
 interface RoomViewState {}
@@ -26,7 +31,7 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
         app.innerHTML = `
             <div id="roomContainer" class="room-container">
                 <button id="quitBtn" class="btn-square"></button>
-                <div class="player-list"></div>
+                <div id="joinedPlayers" class="joined-tab"></div>
                 <div id="chatBox" class="chat-box">
                 </div> 
                 <input type="text" id="msgBox" class="input-box" placeholder="Text...">
@@ -39,7 +44,8 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
             chatBox: document.getElementById("chatBox")!,
             msgBox: document.getElementById("msgBox")! as HTMLInputElement,
             readyBtn: document.getElementById("readyBtn")! as HTMLInputElement,
-            quitBtn: document.getElementById("quitBtn")!
+            quitBtn: document.getElementById("quitBtn")!,
+            joinedPlayers: document.getElementById("joinedPlayers")!,
         };
     }
 
@@ -64,10 +70,9 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
 
     attachSocketListeners() {
         onRoomMessaged((username, msg) => {
-            console.log(username, msg);
             const elem = document.createElement("div");
             elem.className = "chat-message";
-            elem.innerText = `${username}: ${msg}`;
+            elem.textContent = `${username}: ${msg}`;
             this.elements.chatBox.appendChild(elem);
             this.elements.chatBox.lastElementChild?.scrollIntoView(true);
         });
@@ -79,6 +84,32 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
                 await navigate("game");
             }
         });
+
+        onRoomJoined((payload: RoomJoinedPayload) => {
+            const newPlayer = document.createElement("div");
+            newPlayer.className = "joined-player";
+            newPlayer.textContent = payload.player;
+            this.elements.joinedPlayers.appendChild(newPlayer);
+        });
+        
+        onRoomLog((log: string) => {
+            const elem = document.createElement("div");
+            elem.className = "chat-message";
+            elem.textContent = log;
+            this.elements.chatBox.appendChild(elem);
+            this.elements.chatBox.lastElementChild?.scrollIntoView(true);
+        });
+
+        onRoomInit((payload: {messages: string[], joinedPlayers: string[]}) => {
+            payload.joinedPlayers.forEach(p => {
+                const newPlayer = document.createElement("div");
+                newPlayer.className = "joined-player";
+                newPlayer.textContent = p;
+                this.elements.joinedPlayers.appendChild(newPlayer);
+            });
+        });
+
+        requestRoomInit();
     }
 
     private displayReadyCount(count: number) {
@@ -94,5 +125,6 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
     detachSocketListeners(): void {
         socket.off("room:messaged"); 
         socket.off("room:readied");
+        socket.off("room:joined");
     }
 }

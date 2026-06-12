@@ -76,13 +76,21 @@ export function setupSocket(server: any) {
             if (joined) {
                 socket.join(room.name);
                 io.to(room.name).emit("room:joined", {
-                    player: socket.userId,
+                    player: socket.username,
                     room: room.name,
                     isGameActive: room.game !== undefined
                 });
+                io.to(room.name).emit("room:log", `${socket.username} joined the room`);
             } else {
                 socket.emit("game:error", "Couldn't join room: Room is full.");
             }
+        });
+
+        socket.on("room:init", () => {
+            const room = roomManager.findRoomByPlayerId(socket.userId);
+            if (!room) return;
+
+            socket.emit("room:init", {messages: [], joinedPlayers: Array.from(room.players).map(([_,v]) => v.username)});
         });
 
         socket.on("game:move", (move: Move) => {
@@ -281,6 +289,8 @@ export function setupSocket(server: any) {
                 room: room.name,
                 isGameActive: true,
             });
+
+            io.to(room.name).emit("room:log", `${socket.username} left the room.`);
         });
 
         socket.on("disconnect", () => {

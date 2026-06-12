@@ -418,7 +418,7 @@ input:checked + label.btn-main {
     background-size: contain;
 }
 
-.player-list {
+.joined-tab {
     display: flex;
     flex-direction: column;
     width: 20%;
@@ -428,6 +428,12 @@ input:checked + label.btn-main {
     margin-left: 90%;
     background-color: white;
     border-radius: 10px;
+}
+
+.joined-player {
+    background-color: var(--background-light); 
+    filter: drop-shadow(0 0 2px white) drop-shadow(0 0 4px white);
+    margin: 1rem;
 }
 
 .btn-square:hover {
