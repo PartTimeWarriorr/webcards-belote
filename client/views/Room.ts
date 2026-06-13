@@ -126,5 +126,7 @@ export class RoomView extends View<RoomViewElements, RoomViewState> {
         socket.off("room:messaged"); 
         socket.off("room:readied");
         socket.off("room:joined");
+        socket.off("room:init");
+        socket.off("room:log");
     }
 }

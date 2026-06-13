@@ -14,6 +14,7 @@ declare global {
         interface ProcessEnv {
             JWT_SECRET: string;
             DATABASE_URL: string;
+            PORT: number;
         }
     }
 
@@ -42,6 +43,7 @@ const router = express.Router();
 
 router.post("/auth/register", async (req, res) => {
     try {
+            console.log("Everyone is ready");
         const { email, username, password } = req.body;
 
         const user = await db.createUser(email, username, password);
@@ -156,7 +158,6 @@ router.get(
 
 const app = express();
 const server = createServer(app);
-const PORT = 8080;
 
 app.use(
     cors({
@@ -170,6 +171,6 @@ app.use("/api", router);
 
 setupSocket(server);
 
-server.listen(PORT, () => {
-    console.log(`Listening on ${PORT}`);
+server.listen(process.env.PORT, () => {
+    console.log(`Listening on ${process.env.PORT}`);
 });

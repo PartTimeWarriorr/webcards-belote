@@ -186,7 +186,7 @@ export class HomeView extends View<HomeViewElements, HomeViewState> {
         return `
                             <div class="lobby-box">
                                 <div class="lobby-name">${room.name}</div>
-                                <div class="lobby-players">4/4</div>
+                                <div class="lobby-players">0/4</div>
                             </div>
         `;
     }

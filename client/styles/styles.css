@@ -125,20 +125,6 @@ body {
     background-color: var(--btn-main-color);
 }
 
-/* .btn-blue {
-    border-radius: 50%;
-    padding: 4rem;
-    background-color: blue;
-    border: none;
-}
-
-.btn-yellow {
-    border-radius: 50%;
-    padding: 4rem;
-    background-color: yellow;
-    border: none;
-} */
-
 .gamemode-modal {
     top: 50%;
     left: 50%;
@@ -249,7 +235,6 @@ body {
 .scoreboard-subtitle {
     text-align: center;
     font-size: 1.2rem;
-    /* color:; */
 }
 
 .scoreboard-text {
@@ -329,7 +314,6 @@ input:checked + label.btn-main {
 }
 
 .auth-grid form {
-    /* box-shadow: inset 5px 25px 4px rgba(87, 242, 105, 1), inset 99px 5px 20px rgba(87,242,105,0.18); */
     box-shadow: #57f269 20px 20px;
     border-radius: 5px;
     padding: 1rem;
@@ -340,6 +324,7 @@ input:checked + label.btn-main {
     gap: 0.5rem;
     align-items: center;
     background-color: var(--btn-main-toggle);
+    filter: drop-shadow(5px 5px 5px #57f269);
 }
 
 .auth-grid input {
@@ -475,7 +460,7 @@ input:checked + label.btn-main {
 .profile {
     min-width: 10vw;
     height: 12vh;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.5);
     position: absolute;
     border-radius: 8px;
 }
@@ -558,4 +543,14 @@ input:checked + label.btn-main {
 .error-tab {
     color: red;
     position: absolute;
+}
+
+#container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+#app *:not(#container) {
+  z-index: 10;
 }

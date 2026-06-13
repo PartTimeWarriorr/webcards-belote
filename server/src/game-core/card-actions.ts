@@ -33,7 +33,7 @@ export function dealInitial(
     const newHands = structuredClone(hands);
 
     config.players.forEach((p) => {
-        newHands[p] = newDeck.splice(0, 1);
+        newHands[p] = newDeck.splice(0, 5);
     });
 
     return {deck: newDeck, hands: newHands};
@@ -48,7 +48,7 @@ export function dealFinal(
     const newHands = structuredClone(hands);
 
     config.players.forEach((p) => {
-        newHands[p] = newHands[p].concat(newDeck.splice(0, 1));
+        newHands[p] = newHands[p].concat(newDeck.splice(0, 3));
     });
 
     return {deck: newDeck, hands: newHands};

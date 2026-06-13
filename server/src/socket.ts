@@ -161,9 +161,9 @@ export function setupSocket(server: any) {
             }
 
             io.to(room.name).emit("room:readied", Array.from(room.readyPlayers));
-            console.log("Everyone is ready");
 
             if (room.allReady()) {
+                console.log("Everyone is ready");
                 room.resetReady();
             }
         });
@@ -258,6 +258,7 @@ export function setupSocket(server: any) {
                 gameInit,
                 view: buildPlayerView(state, socket.userId),
             });
+            processBots(io, room);
         });
 
         socket.on("room:message", (msg: string) => {

@@ -14,8 +14,7 @@ import {
     RoomJoinedPayload,
 } from "@shared/types";
 
-const SERVER_URL = "http://localhost:8080";
-export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(import.meta.env.VITE_SERVER_URL, {
     withCredentials: true,
     transports: ["websocket"],
     autoConnect: false,

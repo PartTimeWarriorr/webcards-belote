@@ -1,6 +1,8 @@
-const API_BASE_URL = "http://localhost:8080/api";
+const API_URL = import.meta.env.VITE_SERVER_URL + "/api";
+console.log(API_URL)
+console.log(import.meta.env);
 async function request<T>(path: string, options = {}): Promise<T> {
-    const url = API_BASE_URL + path;
+    const url = API_URL + path;
     const headers = { "Content-type": "application/json" };
 
     const config: RequestInit = {

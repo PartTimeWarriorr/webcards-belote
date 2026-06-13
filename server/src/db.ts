@@ -4,7 +4,7 @@ import { User } from "../prisma/generated/client";
 import bcrypt from "bcryptjs";
 import { GameState, Move } from "@shared/types";
 
-const connectionString = process.env["DATABASE_URL"];
+const connectionString = process.env.DATABASE_URL;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({
     adapter,
