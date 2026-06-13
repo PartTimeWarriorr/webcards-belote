@@ -17,6 +17,8 @@ Browser-based multiplayer card game based on the game [belote](https://en.wikipe
 5. `npx prisma generate`
 6. In root: `npm run dev` to run.
 
+---
+
 ### Gallery
 
 ![Searching for a room to play in](/screenshots/screen1.png)
